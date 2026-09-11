@@ -1,0 +1,48 @@
+{
+  "verified_at": "2026-09-10T23:31:33+03:00",
+  "checks": {
+    "gameplay_tests": {
+      "command": "npm test",
+      "status": "passed",
+      "passed": 19,
+      "failed": 0,
+      "note": "Includes Firebase public config, Firebase CLI project mapping, credential-ignore guard, Realtime Database rule guards, and gameplay tests."
+    },
+    "typescript_syntax": {
+      "command": "npm run test:syntax",
+      "status": "passed",
+      "files_checked": 19
+    },
+    "firebase_rules_json": {
+      "command": "JSON.parse(firebase/database.rules.json)",
+      "status": "passed",
+      "note": "Rules parse as JSON and tests verify authentication, deletion protection, and player/budget/slot caps."
+    },
+    "private_key_scan": {
+      "patterns": [
+        "PEM private-key header",
+        "service-account private_key field",
+        "Admin SDK credential JSON filename"
+      ],
+      "status": "passed",
+      "note": "No Admin SDK credential file or private key is included in the release. Documentation mentions the forbidden filename pattern only."
+    },
+    "production_build": {
+      "command": "npm run build",
+      "status": "not_run",
+      "reason": "npm install could not complete in the execution sandbox, so Next.js dependencies were unavailable. Run npm install followed by npm run build locally or let Vercel build the repository."
+    }
+  },
+  "firebase": {
+    "project_id": "kadro-party-game-51d0c",
+    "database_url": "https://kadro-party-game-51d0c-default-rtdb.europe-west1.firebasedatabase.app",
+    "database_location": "europe-west1 (Belgium)",
+    "database_created": true,
+    "web_config_embedded": true,
+    "admin_credentials_embedded": false
+  },
+  "known_scope_limits": [
+    "The MVP uses client-side Firebase transactions and is intended for trusted friend groups, not a cash-prize competitive environment.",
+    "A public-scale release should add Firebase App Check, server-authoritative mutations, rate limiting, and host migration."
+  ]
+}

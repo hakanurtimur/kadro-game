@@ -1,0 +1,18 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "rooms": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && newData.exists() && ((!data.exists() && newData.child('hostUid').val() === auth.uid && newData.child('players').child(auth.uid).child('uid').val() === auth.uid) || (data.exists() && data.child('players').child(auth.uid).exists()) || (data.exists() && data.child('status').val() === 'lobby' && !data.child('players').child(auth.uid).exists() && newData.child('players').child(auth.uid).child('uid').val() === auth.uid))",
+        ".validate": "newData.hasChildren(['code','hostUid','status','budget','slots','createdAt','updatedAt','players','auction']) && newData.child('code').val() === $code && newData.child('hostUid').isString() && newData.child('budget').isNumber() && newData.child('budget').val() >= 20 && newData.child('budget').val() <= 500 && newData.child('slots').isNumber() && newData.child('slots').val() >= 3 && newData.child('slots').val() <= 8 && newData.child('createdAt').isNumber() && newData.child('updatedAt').isNumber() && (newData.child('status').val() === 'lobby' || newData.child('status').val() === 'preview' || newData.child('status').val() === 'auction' || newData.child('status').val() === 'rps' || newData.child('status').val() === 'leftovers' || newData.child('status').val() === 'results') && (!data.exists() || (newData.child('code').val() === data.child('code').val() && newData.child('hostUid').val() === data.child('hostUid').val() && newData.child('budget').val() === data.child('budget').val() && newData.child('slots').val() === data.child('slots').val() && newData.child('createdAt').val() === data.child('createdAt').val()))",
+        "players": {
+          "$uid": {
+            ".validate": "newData.hasChildren(['uid','nickname','seat','balance']) && newData.child('uid').val() === $uid && newData.child('nickname').isString() && newData.child('nickname').val().length > 0 && newData.child('nickname').val().length <= 20 && newData.child('seat').isNumber() && newData.child('seat').val() >= 0 && newData.child('seat').val() < 8 && newData.child('balance').isNumber() && newData.child('balance').val() >= 0 && newData.child('balance').val() <= 500 && (!data.exists() || newData.child('uid').val() === data.child('uid').val())"
+          }
+        }
+      }
+    }
+  }
+}

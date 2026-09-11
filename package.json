@@ -1,0 +1,29 @@
+{
+  "name": "kadro-auction-party",
+  "version": "0.2.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "node --test tests/*.test.mjs",
+    "test:syntax": "node tests/syntax-check.mjs",
+    "check": "npm test && npm run test:syntax"
+  },
+  "dependencies": {
+    "firebase": "^12.14.0",
+    "lucide-react": "^0.468.0",
+    "next": "15.5.24",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  }
+}
