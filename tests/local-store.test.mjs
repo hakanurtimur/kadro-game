@@ -1,16 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { createRequire } from 'node:module';
-let ts;
-try {
-  const mod = await import('typescript');
-  ts = mod.default ?? mod;
-} catch {
-  const mod = await import('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript/lib/typescript.js');
-  ts = mod.default ?? mod;
-}
+import { importTs } from './transpile-import.mjs';
 
 class MemoryStorage {
   constructor() { this.map = new Map(); }
@@ -23,19 +13,7 @@ class MemoryStorage {
 globalThis.localStorage = new MemoryStorage();
 globalThis.sessionStorage = new MemoryStorage();
 
-async function compileCjs(sourcePath, outPath) {
-  const source = await fs.readFile(sourcePath, 'utf8');
-  const output = ts.transpileModule(source, {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
-  }).outputText;
-  await fs.mkdir(path.dirname(outPath), { recursive: true });
-  await fs.writeFile(outPath, output);
-}
-
-await compileCjs('lib/game-engine.ts', '.test-cjs/lib/game-engine.js');
-await compileCjs('lib/local-store.ts', '.test-cjs/lib/local-store.js');
-const require = createRequire(import.meta.url);
-const { LocalGameStore } = require('../.test-cjs/lib/local-store.js');
+const { LocalGameStore } = await importTs('lib/local-store.ts');
 
 test('local store creates a room and a second session can join it', async () => {
   const hostStore = new LocalGameStore();

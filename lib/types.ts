@@ -1,3 +1,15 @@
+export type GameMode = "classic" | "chaos";
+export type ChaosEventKind = "crisis" | "inheritance" | "swap" | "scenario";
+export type ChaosEvent = {
+  id: string;
+  kind: ChaosEventKind;
+  title: string;
+  description: string;
+  afterAuction: number;
+  occurredAt: number;
+};
+export type ChaosState = { seed: number; history: ChaosEvent[] };
+
 export type GameStatus = "lobby" | "preview" | "auction" | "rps" | "leftovers" | "results";
 export type RoundSource = "groq" | "demo";
 export type CharacterStatus = "queued" | "active" | "sold" | "unsold" | "drafted";
@@ -20,6 +32,7 @@ export type TeamMember = CharacterSeed & {
   characterId: string;
   acquisition: Acquisition;
   price: number;
+  transferred?: boolean;
 };
 
 export type PlayerState = {
@@ -31,6 +44,7 @@ export type PlayerState = {
 };
 
 export type AuctionState = {
+  startsAt?: number | null;
   index: number;
   currentBid: number;
   bidderUid: string | null;
@@ -58,6 +72,8 @@ export type JudgeResult = {
 };
 
 export type RoomState = {
+  mode?: GameMode;
+  chaos?: ChaosState | null;
   code: string;
   hostUid: string;
   status: GameStatus;

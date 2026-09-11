@@ -18,6 +18,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import { ChaosBanner, ChaosHistory, ModePicker } from "@/components/ChaosMode";
 import DiceButton from "@/components/DiceButton";
 import PolyAvatar from "@/components/PolyAvatar";
 import PolyCharacter from "@/components/PolyCharacter";
@@ -30,11 +31,12 @@ import {
   pickLeftover,
   placeBid,
   saveJudge,
+  setGameMode,
   startAuction,
   submitRpsChoice,
 } from "@/lib/game-engine";
 import { getGameStore } from "@/lib/game-store";
-import type { CharacterSeed, JudgeResult, RoomState, RoundPayload, RpsMove } from "@/lib/types";
+import type { GameMode, CharacterSeed, JudgeResult, RoomState, RoundPayload, RpsMove } from "@/lib/types";
 
 const rpsChoices: Array<{ move: RpsMove; emoji: string; label: string }> = [
   { move: "rock", emoji: "✊", label: "Taş" },
@@ -58,6 +60,11 @@ export default function RoomClient({ code }: { code: string }) {
   const topBidder = room?.auction.bidderUid ? room.players[room.auction.bidderUid] : null;
   const remainingMs = room?.auction.endsAt ? Math.max(0, room.auction.endsAt - now) : 0;
   const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+  const chaosPauseSeconds = room?.status === "auction" && room.auction.startsAt
+    ? Math.max(0, Math.ceil((room.auction.startsAt - now) / 1000)) : 0;
+  const chaosPaused = chaosPauseSeconds > 0;
+  const chaosHistory = room?.chaos?.history ?? [];
+  const lastChaosEvent = chaosHistory[chaosHistory.length - 1];
   const timerPercent = Math.max(0, Math.min(100, (remainingMs / 15_000) * 100));
 
   useEffect(() => {
@@ -134,14 +141,37 @@ export default function RoomClient({ code }: { code: string }) {
     return data;
   }
 
+  async function selectMode(mode: GameMode) {
+    if (!uid || !isHost || busy) return;
+    setBusy(true);
+    try {
+      await mutate((current) => setGameMode(current, uid, mode));
+      setToast(mode === "chaos" ? "Kaos modu açık! Her 3 ihalede bir sürpriz 🎲" : "Klasik moda dönüldü.");
+    } catch {
+      // mutate already shows the error; no local optimistic mode can diverge.
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function againstSnapshot(snapshot: RoomState, transition: (current: RoomState) => RoomState) {
+    return (current: RoomState) => {
+      if (current.updatedAt !== snapshot.updatedAt || current.status !== snapshot.status ||
+          current.characterCategory !== snapshot.characterCategory || current.rerollsLeft !== snapshot.rerollsLeft) {
+        throw new Error("Masa başka bir işlemle değişti. Güncel turda tekrar dene; zar hakkın harcanmadı.");
+      }
+      return transition(current);
+    };
+  }
+
   async function generateRound() {
     if (!room || !uid || !isHost) return;
     setBusy(true);
     setToast("AI oyun masasını hazırlıyor…");
     try {
       const payload = await fetchJson("/api/round", { playerCount: players.length, slots: room.slots }) as RoundPayload;
-      await mutate((current) => applyRoundPreview(current, uid, payload));
-      setToast(payload.source === "groq" ? "AI turu hazırladı ✨" : "Demo turu hazır. Groq key ekleyince AI devreye girer.");
+      await mutate(againstSnapshot(room, (current) => applyRoundPreview(current, uid, payload)));
+      setToast(payload.source === "groq" ? "AI turu hazırladı ✨" : "Hazır katalog turu oluşturuldu; evren ve karakterler eşleşiyor.");
     } catch (error) {
       setToast(error instanceof Error ? error.message : "Tur üretilemedi.");
     } finally {
@@ -161,7 +191,7 @@ export default function RoomClient({ code }: { code: string }) {
         playerCount: players.length,
         slots: room.slots,
       });
-      await mutate((current) => applyScenarioReroll(current, uid, data.scenario));
+      await mutate(againstSnapshot(room, (current) => applyScenarioReroll(current, uid, data.scenario)));
       setToast("Görev zarlandı 🎲");
     } catch (error) {
       setToast(error instanceof Error ? error.message : "Zar çalışmadı.");
@@ -182,11 +212,11 @@ export default function RoomClient({ code }: { code: string }) {
         playerCount: players.length,
         slots: room.slots,
       });
-      await mutate((current) => applyCategoryReroll(current, uid, {
+      await mutate(againstSnapshot(room, (current) => applyCategoryReroll(current, uid, {
         characterCategory: data.characterCategory,
         characters: data.characters,
         source: data.source,
-      }));
+      })));
       setToast("Karakter evreni değişti 🌈");
     } catch (error) {
       setToast(error instanceof Error ? error.message : "Kategori zarında sorun oldu.");
@@ -208,7 +238,7 @@ export default function RoomClient({ code }: { code: string }) {
         slots: room.slots,
         index,
       });
-      await mutate((current) => applyCharacterReroll(current, uid, index, data.character as CharacterSeed));
+      await mutate(againstSnapshot(room, (current) => applyCharacterReroll(current, uid, index, data.character as CharacterSeed)));
       setToast("Karakter değişti ✨");
     } catch (error) {
       setToast(error instanceof Error ? error.message : "Karakter zarında sorun oldu.");
@@ -343,6 +373,7 @@ export default function RoomClient({ code }: { code: string }) {
             <span className="tiny-label">MASA AYARLARI</span>
             <div className="big-stat"><small>Bütçe</small><strong>₺{room.budget}</strong></div>
             <div className="big-stat"><small>Kadro</small><strong>{room.slots}<em> slot</em></strong></div>
+            <ModePicker value={room.mode ?? "classic"} disabled={!isHost || busy} onChange={selectMode}/>
             <div className="rule-note">Karakterleri açık artırmada topla. Para biterse üzülme; satılmayan karakterler için RPS sonrası bedava draft var.</div>
           </aside>
         </section>
@@ -367,12 +398,12 @@ export default function RoomClient({ code }: { code: string }) {
             <article className="prompt-card category-card kawaii-card">
               <div className="prompt-card-head"><span>KARAKTER EVRENİ</span>{isHost && <DiceButton compact disabled={busy || room.rerollsLeft <= 0} onClick={rerollCategory}/>}</div>
               <strong>{room.characterCategory}</strong>
-              <p>{room.characters.length} karakter açık artırma sırasını bekliyor.</p>
+              <p>{room.characters.length} karakter bu evrenin kataloğundan seçildi. Yetersiz evrenler başka dizilerle doldurulmaz.</p>
             </article>
           </div>
 
           <div className="character-pool kawaii-card">
-            <div className="pool-head"><div><span className="tiny-label">KARAKTER HAVUZU</span><h3>Kimler geliyor?</h3></div><span className="source-chip">{room.roundSource === "groq" ? "AI generated" : "demo pool"}</span></div>
+            <div className="pool-head"><div><span className="tiny-label">KARAKTER HAVUZU</span><h3>Kimler geliyor?</h3></div><span className="source-chip">{room.roundSource === "groq" ? "AI + katalog" : "hazır katalog"}</span></div>
             <div className="character-chip-grid">
               {room.characters.map((character, index) => (
                 <div className="character-chip" key={character.id}>
@@ -384,6 +415,7 @@ export default function RoomClient({ code }: { code: string }) {
             </div>
           </div>
 
+          <div className="preview-mode kawaii-card"><ModePicker value={room.mode ?? "classic"} disabled={!isHost || busy} onChange={selectMode}/></div>
           <div className="preview-actions">
             {isHost ? <button className="primary-button jumbo" disabled={busy} onClick={beginAuction}><Zap size={20}/> Açık artırmayı başlat</button> : <div className="waiting-pill"><Hourglass size={16}/> Host son zarları kontrol ediyor</div>}
           </div>
@@ -392,12 +424,14 @@ export default function RoomClient({ code }: { code: string }) {
 
       {room.status === "auction" && currentCharacter && (
         <section className="auction-screen game-section">
+          {room.mode === "chaos" && <div className="chaos-mode-label"><Dices size={16}/> KAOS MODU <span>Her 3 ihale sonunda olay kartı</span></div>}
+          {room.mode === "chaos" && lastChaosEvent && <ChaosBanner event={lastChaosEvent} seconds={chaosPauseSeconds}/>}
           <div className="scenario-ribbon"><span>{room.scenario}</span><i>×</i><span>{room.characterCategory}</span></div>
           <div className="auction-grid">
             <section className="auction-stage kawaii-card">
               <div className="auction-topline">
                 <span>KARAKTER {room.auction.index + 1}/{room.characters.length}</span>
-                <div className={`timer-pill ${remainingSeconds <= 3 ? "danger" : ""}`}><span>{remainingSeconds}</span> sn</div>
+                <div className={`timer-pill ${!chaosPaused && remainingSeconds <= 3 ? "danger" : ""}`}><span>{chaosPaused ? 15 : remainingSeconds}</span> {chaosPaused ? "bekle" : "sn"}</div>
               </div>
               <div className="auction-progress"><span style={{ width: `${timerPercent}%` }}/></div>
               <PolyCharacter name={currentCharacter.name} source={currentCharacter.source}/>
@@ -409,11 +443,11 @@ export default function RoomClient({ code }: { code: string }) {
               </div>
               <div className="bid-controls">
                 {[1, 5, 10].map((increment) => (
-                  <button key={increment} onClick={() => bid(increment)} disabled={me.team.length >= room.slots || room.auction.currentBid + increment > me.balance}>+₺{increment}</button>
+                  <button key={increment} onClick={() => bid(increment)} disabled={chaosPaused || remainingMs <= 0 || me.team.length >= room.slots || room.auction.currentBid + increment > me.balance}>+₺{increment}</button>
                 ))}
-                <button className="all-in" onClick={() => bid(0, true)} disabled={me.team.length >= room.slots || me.balance <= room.auction.currentBid}>ALL IN</button>
+                <button className="all-in" onClick={() => bid(0, true)} disabled={chaosPaused || remainingMs <= 0 || me.team.length >= room.slots || me.balance <= room.auction.currentBid}>ALL IN</button>
               </div>
-              {isHost && <button className="host-skip" onClick={() => closeCurrentAuction(currentCharacter.id)}>Şimdi kapat <ChevronRight size={15}/></button>}
+              {isHost && <button className="host-skip" disabled={chaosPaused} onClick={() => closeCurrentAuction(currentCharacter.id)}>Şimdi kapat <ChevronRight size={15}/></button>}
             </section>
 
             <aside className="auction-sidebar">
@@ -431,7 +465,7 @@ export default function RoomClient({ code }: { code: string }) {
                 <div className="side-title"><Sparkles size={16}/> KADRON</div>
                 {me.team.length === 0 && <p className="empty-copy">Henüz kimseyi kapamadın.</p>}
                 {me.team.map((member, index) => (
-                  <div className="roster-line" key={member.characterId}><span>{index + 1}</span><div><strong>{member.name}</strong><small>{member.source}</small></div><b>{member.price ? `₺${member.price}` : "FREE"}</b></div>
+                  <div className="roster-line" key={member.characterId}><span>{index + 1}</span><div><strong>{member.name}</strong><small>{member.source}</small></div><b>{member.transferred ? "↔ TAKAS" : member.price ? `₺${member.price}` : "FREE"}</b></div>
                 ))}
                 {Array.from({ length: Math.max(0, room.slots - me.team.length) }).map((_, index) => <div className="roster-empty" key={index}>boş slot</div>)}
               </div>
@@ -499,7 +533,7 @@ export default function RoomClient({ code }: { code: string }) {
                   {winner && <div className="winner-crown">👑 KAZANAN</div>}
                   <div className="result-player"><PolyAvatar seed={player.uid} size={64}/><div><small>OYUNCU</small><h3>{player.nickname}</h3></div>{ranking && <div className="score-bubble">{ranking.score}</div>}</div>
                   <div className="result-roster">
-                    {player.team.map((member, index) => <div key={member.characterId}><span>{String(index + 1).padStart(2, "0")}</span><strong>{member.name}</strong><small>{member.acquisition === "leftover" ? "FREE" : `₺${member.price}`}</small></div>)}
+                    {player.team.map((member, index) => <div key={member.characterId}><span>{String(index + 1).padStart(2, "0")}</span><strong>{member.name}</strong><small>{member.transferred ? "TAKAS" : member.acquisition === "leftover" ? "FREE" : `₺${member.price}`}</small></div>)}
                   </div>
                   {ranking ? <p className="judge-comment">“{ranking.comment}”</p> : <p className="judge-comment muted">Jüri henüz konuşmadı.</p>}
                 </article>
@@ -507,6 +541,7 @@ export default function RoomClient({ code }: { code: string }) {
             })}
           </div>
 
+          <ChaosHistory events={chaosHistory}/>
           {room.judge?.summary && <div className="judge-summary"><Bot size={20}/><span>{room.judge.summary}</span></div>}
           <div className="results-actions">
             {isHost && !room.judge && <button className="primary-button jumbo" disabled={busy} onClick={runJudge}><Sparkles size={20}/> AI jüriyi çalıştır</button>}

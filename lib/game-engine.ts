@@ -1,3 +1,6 @@
+import { canonicalCategory, canonicalCharacter, normalizeCatalogKey } from "./character-catalog";
+import { applyScheduledChaos, chaosSeed, CHAOS_PAUSE_MS } from "./chaos";
+import type { GameMode } from "./types";
 import type {
   CharacterSeed,
   GameCharacter,
@@ -18,6 +21,12 @@ const AUCTION_MS = 15_000;
 
 export function normalizeRoomState(raw: any): RoomState {
   const room = structuredClone(raw ?? {});
+  room.mode = room.mode === "chaos" ? "chaos" : "classic";
+  if (room.chaos && room.mode === "chaos") {
+    room.chaos.seed = Number(room.chaos.seed) >>> 0;
+    room.chaos.history = (Array.isArray(room.chaos.history)
+      ? room.chaos.history : Object.values(room.chaos.history ?? {})).filter(Boolean);
+  } else room.chaos = null;
   room.players = room.players ?? {};
   for (const player of Object.values(room.players) as any[]) {
     if (Array.isArray(player.team)) player.team = player.team.filter(Boolean);
@@ -34,6 +43,7 @@ export function normalizeRoomState(raw: any): RoomState {
   room.auction.currentBid = Number(room.auction.currentBid) || 0;
   room.auction.bidderUid = room.auction.bidderUid ?? null;
   room.auction.endsAt = room.auction.endsAt ?? null;
+  room.auction.startsAt = room.auction.startsAt ?? null;
 
   if (room.rps) {
     room.rps.contenders = Array.isArray(room.rps.contenders)
@@ -105,6 +115,30 @@ function materializeCharacters(characters: CharacterSeed[]): GameCharacter[] {
       winningBid: 0,
     };
   });
+}
+
+function verifiedSeeds(category: string, seeds: CharacterSeed[]): CharacterSeed[] {
+  if (!canonicalCategory(category) || seeds.length > 80) throw new GameRuleError("Karakter evreni veya havuzu geçersiz.");
+  const seen = new Set<string>();
+  return seeds.map((seed) => {
+    const character = canonicalCharacter(category, seed);
+    if (!character) throw new GameRuleError("Bu karakter seçili evrene ait değil. Evren zarını tekrar kullan.");
+    const key = normalizeCatalogKey(character.name);
+    if (seen.has(key)) throw new GameRuleError("Aynı karakter kadro havuzunda tekrar edemez.");
+    seen.add(key);
+    return character;
+  });
+}
+
+export function setGameMode(room: RoomState, actorUid: string, mode: GameMode, now = Date.now()): RoomState {
+  const next = cloneRoom(room);
+  assertHost(next, actorUid);
+  if (next.status !== "lobby" && next.status !== "preview") throw new GameRuleError("Mod yalnızca tur başlamadan değiştirilebilir.");
+  if (mode !== "classic" && mode !== "chaos") throw new GameRuleError("Geçersiz oyun modu.");
+  next.mode = mode;
+  next.chaos = null;
+  next.updatedAt = now;
+  return next;
 }
 
 function resetPlayerForRound(room: RoomState) {
@@ -185,12 +219,14 @@ function winningMove(a: RpsMove, b: RpsMove): RpsMove {
 
 export function createInitialRoom(input: {
   code: string;
+  mode?: GameMode;
   hostUid: string;
   nickname: string;
   budget: number;
   slots: number;
   now?: number;
 }): RoomState {
+  if (input.mode !== undefined && input.mode !== "classic" && input.mode !== "chaos") throw new GameRuleError("Geçersiz oyun modu.");
   const nickname = normalizedNickname(input.nickname);
   if (!nickname) throw new GameRuleError("Bir nickname yazmalısın.");
   if (!/^[A-Z2-9]{5}$/.test(input.code)) throw new GameRuleError("Oda kodu geçersiz.");
@@ -204,6 +240,8 @@ export function createInitialRoom(input: {
   const now = input.now ?? Date.now();
   return {
     code: input.code,
+    mode: input.mode ?? "classic",
+    chaos: null,
     hostUid: input.hostUid,
     status: "lobby",
     budget: input.budget,
@@ -266,15 +304,16 @@ export function applyRoundPreview(room: RoomState, actorUid: string, payload: Ro
 
   next.status = "preview";
   next.scenario = payload.scenario.trim().slice(0, 90);
-  next.characterCategory = payload.characterCategory.trim().slice(0, 80);
+  next.characterCategory = canonicalCategory(payload.characterCategory) ?? payload.characterCategory.trim().slice(0, 80);
   next.roundSource = payload.source;
-  next.characters = materializeCharacters(payload.characters);
+  next.characters = materializeCharacters(verifiedSeeds(next.characterCategory, payload.characters));
   next.rerollsLeft = 5;
   next.auction = { index: 0, currentBid: 0, bidderUid: null, endsAt: null };
   next.rps = null;
   next.starterUid = null;
   next.draftTurnUid = null;
   next.judge = null;
+  next.chaos = null;
   resetPlayerForRound(next);
   next.updatedAt = now;
   return next;
@@ -308,8 +347,8 @@ export function applyCategoryReroll(
   spendReroll(next);
   if (!payload.characterCategory.trim()) throw new GameRuleError("Yeni kategori boş olamaz.");
   if (payload.characters.length < Object.keys(next.players).length * next.slots) throw new GameRuleError("Yeni havuzda yeterli karakter yok.");
-  next.characterCategory = payload.characterCategory.trim().slice(0, 80);
-  next.characters = materializeCharacters(payload.characters);
+  next.characterCategory = canonicalCategory(payload.characterCategory) ?? payload.characterCategory.trim().slice(0, 80);
+  next.characters = materializeCharacters(verifiedSeeds(next.characterCategory, payload.characters));
   next.roundSource = payload.source;
   next.updatedAt = now;
   return next;
@@ -326,12 +365,14 @@ export function applyCharacterReroll(
   assertHost(next, actorUid);
   spendReroll(next);
   if (!next.characters[index]) throw new GameRuleError("Karakter bulunamadı.");
-  const name = replacement.name.trim();
+  const canonical = canonicalCharacter(next.characterCategory, replacement);
+  if (!canonical) throw new GameRuleError("Bu karakter seçili evrene ait değil.");
+  const name = canonical.name;
   if (!name) throw new GameRuleError("Yeni karakter boş olamaz.");
   if (next.characters.some((character, i) => i !== index && character.name.toLocaleLowerCase("tr-TR") === name.toLocaleLowerCase("tr-TR"))) {
     throw new GameRuleError("AI aynı karakteri tekrar verdi.");
   }
-  const [materialized] = materializeCharacters([replacement]);
+  const [materialized] = materializeCharacters([canonical]);
   materialized.id = next.characters[index].id;
   next.characters[index] = materialized;
   next.updatedAt = now;
@@ -345,13 +386,14 @@ export function startAuction(room: RoomState, actorUid: string, now = Date.now()
   if (!next.characters.length) throw new GameRuleError("Karakter havuzu boş.");
 
   next.status = "auction";
+  next.chaos = next.mode === "chaos" ? { seed: chaosSeed(`${next.code}:${next.createdAt}:${now}`), history: [] } : null;
   next.characters = next.characters.map((character, index) => ({
     ...character,
     status: index === 0 ? "active" : "queued",
     winnerUid: null,
     winningBid: 0,
   }));
-  next.auction = { index: 0, currentBid: 0, bidderUid: null, endsAt: now + AUCTION_MS };
+  next.auction = { index: 0, currentBid: 0, bidderUid: null, startsAt: now, endsAt: now + AUCTION_MS };
   next.updatedAt = now;
   return next;
 }
@@ -360,6 +402,8 @@ export function placeBid(room: RoomState, uid: string, amount: number, now = Dat
   const next = cloneRoom(room);
   const player = assertPlayer(next, uid);
   if (next.status !== "auction") throw new GameRuleError("Şu an açık artırma yok.");
+  if (next.auction.startsAt && now < next.auction.startsAt) throw new GameRuleError("Kaos kartı okunuyor; ihale birazdan açılacak.");
+  if (next.auction.endsAt && now >= next.auction.endsAt) throw new GameRuleError("Bu ihalenin süresi bitti.");
   if (player.team.length >= next.slots) throw new GameRuleError("Kadron zaten dolu.");
   if (!Number.isInteger(amount) || amount <= next.auction.currentBid) throw new GameRuleError("Teklif mevcut tekliften daha yüksek olmalı.");
   if (amount > player.balance) throw new GameRuleError("Bakiye yetmiyor.");
@@ -385,6 +429,7 @@ export function closeAuction(
   const next = cloneRoom(room);
   assertHost(next, actorUid);
   if (next.status !== "auction") throw new GameRuleError("Açık artırma zaten kapanmış.");
+  if (next.auction.startsAt && now < next.auction.startsAt) throw new GameRuleError("Kaos kartı okunurken ihale kapatılamaz.");
 
   const current = next.characters[next.auction.index];
   if (!current || current.id !== expectedCharacterId) throw new GameRuleError("Bu açık artırma artık aktif değil.");
@@ -424,7 +469,8 @@ export function closeAuction(
     return next;
   }
 
-  next.auction = { index: nextIndex, currentBid: 0, bidderUid: null, endsAt: now + AUCTION_MS };
+  const startsAt = now + (applyScheduledChaos(next, nextIndex, now) ? CHAOS_PAUSE_MS : 0);
+  next.auction = { index: nextIndex, currentBid: 0, bidderUid: null, startsAt, endsAt: startsAt + AUCTION_MS };
   next.characters[nextIndex].status = "active";
   next.updatedAt = now;
   return next;

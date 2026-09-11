@@ -1,28 +1,31 @@
-import fs from 'node:fs/promises';
+import fs from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
 let ts;
 try {
-  const mod = await import('typescript');
-  ts = mod.default ?? mod;
+  ts = require('typescript');
 } catch {
-  const mod = await import('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript/lib/typescript.js');
-  ts = mod.default ?? mod;
+  // The delivery sandbox has a global compiler; normal installs use the devDependency above.
+  ts = require('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript/lib/typescript.js');
 }
 
-export async function importTs(relativePath) {
-  const sourcePath = path.resolve(relativePath);
-  const source = await fs.readFile(sourcePath, 'utf8');
+// Test-only loader: resolve actual local dependencies, including their module cache.
+// No string replacements or mocked production imports; no shared temporary-file races.
+require.extensions['.ts'] = (module, filename) => {
+  const source = fs.readFileSync(filename, 'utf8');
   const output = ts.transpileModule(source, {
+    fileName: filename,
     compilerOptions: {
-      module: ts.ModuleKind.ES2022,
+      module: ts.ModuleKind.CommonJS,
       target: ts.ScriptTarget.ES2022,
-      jsx: ts.JsxEmit.ReactJSX,
       esModuleInterop: true,
     },
   }).outputText;
-  const outPath = path.resolve('.test-tmp', relativePath.replace(/[\\/]/g, '__').replace(/\.tsx?$/, '.mjs'));
-  await fs.mkdir(path.dirname(outPath), { recursive: true });
-  await fs.writeFile(outPath, output, 'utf8');
-  return import(`${pathToFileURL(outPath).href}?v=${Date.now()}-${Math.random()}`);
+  module._compile(output, filename);
+};
+
+export async function importTs(relativePath) {
+  return require(path.resolve(relativePath));
 }
