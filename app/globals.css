@@ -700,37 +700,38 @@ html, body { max-width: 100%; overflow-x: hidden; }
   .ludo-action-toast, .ludo-chaos-card { animation:none!important; }
 }
 
-/* Patch 07 — Ludo route preview: soft team-colored path, no checkmark */
-.ludo-preview-route {
-  z-index: 8;
+/* Patch 08 — destination-only Ludo target; visual never participates in grid sizing */
+.ludo-preview-target-slot {
+  z-index: 24;
   align-self: stretch;
   justify-self: stretch;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
   margin: 1px;
   border-radius: 5px;
   pointer-events: none;
-  opacity: .72;
-  animation: ludo-route-breathe 1.15s ease-in-out infinite;
+  opacity: 1;
+  animation: ludo-target-breathe .9s ease-in-out infinite;
 }
-.ludo-preview-route.red { background: rgba(230,111,111,.25); box-shadow: inset 0 0 0 2px rgba(207,78,78,.34); }
-.ludo-preview-route.green { background: rgba(87,174,120,.25); box-shadow: inset 0 0 0 2px rgba(53,145,87,.34); }
-.ludo-preview-route.yellow { background: rgba(224,174,57,.27); box-shadow: inset 0 0 0 2px rgba(190,137,25,.36); }
-.ludo-preview-route.blue { background: rgba(101,121,215,.24); box-shadow: inset 0 0 0 2px rgba(73,92,186,.34); }
-.ludo-preview-route.target { z-index: 10; opacity: 1; filter: brightness(1.08) saturate(1.15); animation: ludo-target-breathe .9s ease-in-out infinite; }
-.ludo-preview-route.red.target { box-shadow: inset 0 0 0 3px rgba(200,70,70,.62), 0 0 12px rgba(230,111,111,.72), 0 0 22px rgba(230,111,111,.32); }
-.ludo-preview-route.green.target { box-shadow: inset 0 0 0 3px rgba(46,137,80,.62), 0 0 12px rgba(87,174,120,.72), 0 0 22px rgba(87,174,120,.32); }
-.ludo-preview-route.yellow.target { box-shadow: inset 0 0 0 3px rgba(177,124,20,.64), 0 0 12px rgba(224,174,57,.76), 0 0 22px rgba(224,174,57,.34); }
-.ludo-preview-route.blue.target { box-shadow: inset 0 0 0 3px rgba(65,83,177,.62), 0 0 12px rgba(101,121,215,.74), 0 0 22px rgba(101,121,215,.32); }
+.ludo-preview-target-slot.red { background: rgba(230,111,111,.28); box-shadow: inset 0 0 0 3px rgba(200,70,70,.62), 0 0 12px rgba(230,111,111,.72), 0 0 22px rgba(230,111,111,.32); }
+.ludo-preview-target-slot.green { background: rgba(87,174,120,.28); box-shadow: inset 0 0 0 3px rgba(46,137,80,.62), 0 0 12px rgba(87,174,120,.72), 0 0 22px rgba(87,174,120,.32); }
+.ludo-preview-target-slot.yellow { background: rgba(224,174,57,.30); box-shadow: inset 0 0 0 3px rgba(177,124,20,.64), 0 0 12px rgba(224,174,57,.76), 0 0 22px rgba(224,174,57,.34); }
+.ludo-preview-target-slot.blue { background: rgba(101,121,215,.27); box-shadow: inset 0 0 0 3px rgba(65,83,177,.62), 0 0 12px rgba(101,121,215,.74), 0 0 22px rgba(101,121,215,.32); }
 .ludo-preview-target-hitbox {
+  position: absolute;
   z-index: 28;
-  align-self: center;
-  justify-self: center;
+  left: 50%;
+  top: 50%;
   width: 44px;
   height: 44px;
   padding: 0;
   border: 0;
   border-radius: 50%;
   background: transparent;
+  transform: translate(-50%,-50%);
   cursor: pointer;
+  pointer-events: auto;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
@@ -739,14 +740,12 @@ html, body { max-width: 100%; overflow-x: hidden; }
 .ludo-pawn.selected.green { filter: drop-shadow(0 0 6px #fff) drop-shadow(0 0 11px rgba(87,174,120,.92)); }
 .ludo-pawn.selected.yellow { filter: drop-shadow(0 0 6px #fff) drop-shadow(0 0 11px rgba(224,174,57,.94)); }
 .ludo-pawn.selected.blue { filter: drop-shadow(0 0 6px #fff) drop-shadow(0 0 11px rgba(101,121,215,.92)); }
-@keyframes ludo-route-breathe { 0%,100% { opacity:.56; } 50% { opacity:.82; } }
 @keyframes ludo-target-breathe { 0%,100% { opacity:.86; filter:brightness(1.02) saturate(1.08); } 50% { opacity:1; filter:brightness(1.16) saturate(1.22); } }
 @media (max-width: 430px) {
-  .ludo-preview-route { margin:0; border-radius:3px; }
-  .ludo-preview-target-hitbox { width:44px; height:44px; }
+  .ludo-preview-target-slot { margin:0; border-radius:3px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ludo-preview-route, .ludo-preview-route.target { animation:none!important; }
+  .ludo-preview-target-slot { animation:none!important; }
 }
 
 /* Patch 06 — synthesized Ludo sound controls */
@@ -759,12 +758,4 @@ html, body { max-width: 100%; overflow-x: hidden; }
   .ludo-topbar-actions .ludo-guide-button { display:none; }
   .ludo-sound-toggle { width:44px; height:44px; min-height:44px; padding:0; }
   .ludo-sound-toggle span { display:none; }
-}
-
-
-/* Patch 04c-r1 — mobile Ludo preview without recoloring board cells */
-@media (max-width:780px){
-  .ludo-preview-route{background:transparent!important;border:0!important;box-shadow:inset 0 0 0 2px rgba(117,109,220,.78)!important;transform:none!important;filter:none!important;pointer-events:none!important}
-  .ludo-preview-route.target{background:transparent!important;box-shadow:inset 0 0 0 3px #756ddc,0 0 0 2px rgba(255,255,255,.9)!important;transform:none!important}
-  .ludo-preview-target-hitbox{background:transparent!important;box-shadow:inset 0 0 0 3px #756ddc!important;transform:none!important}
 }

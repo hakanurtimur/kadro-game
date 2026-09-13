@@ -9,6 +9,7 @@ export const LUDO_SOUND_STORAGE_KEY = "kadro:ludo:sound-enabled";
 
 let enabled = true;
 let audioContext: AudioContext | null = null;
+let primedContext: AudioContext | null = null;
 
 export function getLudoSoundEnabled() {
   if (typeof window === "undefined") return true;
@@ -31,11 +32,49 @@ export function setLudoSoundEnabled(value: boolean) {
 
 function getAudioContext() {
   if (typeof window === "undefined") return null;
-  if (audioContext) return audioContext;
+  if (audioContext && String(audioContext.state) !== "closed") return audioContext;
+  audioContext = null;
+  primedContext = null;
   const AudioCtor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AudioCtor) return null;
   audioContext = new AudioCtor();
   return audioContext;
+}
+
+function primeContext(ctx: AudioContext) {
+  if (primedContext === ctx) return;
+  try {
+    const osc=ctx.createOscillator();
+    const gain=ctx.createGain();
+    gain.gain.value=.0001;
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.start();osc.stop(ctx.currentTime+.012);
+    primedContext=ctx;
+  } catch {}
+}
+
+async function ensureRunningAudioContext() {
+  if (!enabled || typeof window === "undefined") return null;
+  let ctx=getAudioContext();
+  if(!ctx)return null;
+
+  let state=String(ctx.state);
+  if(state==="closed"){
+    audioContext=null;
+    primedContext=null;
+    ctx=getAudioContext();
+    if(!ctx)return null;
+    state=String(ctx.state);
+  }
+
+  if(state==="suspended"||state==="interrupted"){
+    try{await ctx.resume();}catch{}
+    state=String(ctx.state);
+  }
+
+  if(state!=="running")return null;
+  primeContext(ctx);
+  return ctx;
 }
 
 function noise(ctx: AudioContext, at: number, duration: number, gain = 0.025) {
@@ -118,24 +157,12 @@ function scheduleEffect(ctx: AudioContext, effect: LudoSfx, options: LudoSfxOpti
 }
 
 export async function unlockLudoAudio() {
-  if (!enabled || typeof window === "undefined") return;
-  const ctx=getAudioContext();
-  if(!ctx)return;
-  if(ctx.state==="suspended") { try{await ctx.resume();}catch{} }
-  if(ctx.state==="running"){
-    const osc=ctx.createOscillator();const gain=ctx.createGain();
-    gain.gain.value=.00001;osc.connect(gain);gain.connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+.008);
-  }
+  await ensureRunningAudioContext();
 }
 
 export function playLudoSfx(effect: LudoSfx, options: LudoSfxOptions = {}) {
   if (!enabled || typeof window === "undefined") return;
-  const ctx = getAudioContext();
-  if (!ctx) return;
-  const play = () => scheduleEffect(ctx, effect, options);
-  if (ctx.state === "suspended") {
-    void ctx.resume().then(play).catch(() => {});
-    return;
-  }
-  play();
+  void ensureRunningAudioContext().then((ctx)=>{
+    if(ctx)scheduleEffect(ctx,effect,options);
+  }).catch(()=>{});
 }

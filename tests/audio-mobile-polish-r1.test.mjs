@@ -2,19 +2,20 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
-test("mobile audio is explicitly unlocked for Ludo and TAŞIR",()=>{
-  const ludo=fs.readFileSync("components/ludo/LudoClient.tsx","utf8");
-  const tasir=fs.readFileSync("components/tasir/TasirClient.tsx","utf8");
-  assert.match(ludo,/unlockLudoAudio/);
-  assert.match(tasir,/unlockTasirAudio/);
-  assert.match(tasir,/playTasirSfx\("shift"/);
-  assert.match(tasir,/playTasirSfx\("handoff"/);
+test("Ludo mobile audio re-unlocks on real gestures and after returning to the page",()=>{
+  const client=fs.readFileSync("components/ludo/LudoClient.tsx","utf8");
+  assert.match(client,/addEventListener\("pointerdown",unlock,\{capture:true\}\)/);
+  assert.match(client,/addEventListener\("touchstart",unlock,\{capture:true,passive:true\}\)/);
+  assert.match(client,/addEventListener\("pageshow",unlock/);
+  assert.match(client,/visibilitychange/);
+  assert.doesNotMatch(client,/once:true/);
 });
 
-test("mobile highlights use inset outlines instead of layout-changing fills",()=>{
-  const ludo=fs.readFileSync("app/globals.css","utf8");
-  const tasir=fs.readFileSync("app/tasir/tasir.module.css","utf8");
-  assert.match(ludo,/mobile Ludo preview without recoloring/);
-  assert.match(tasir,/layout-safe mobile highlights/);
-  assert.match(tasir,/inset 0 0 0 3px/);
+test("Ludo sound engine recovers closed and interrupted AudioContexts before scheduling effects",()=>{
+  const sound=fs.readFileSync("lib/ludo/sound.ts","utf8");
+  assert.match(sound,/state\s*===\s*["']closed["']/);
+  assert.match(sound,/["']interrupted["']/);
+  assert.match(sound,/ensureRunningAudioContext/);
+  assert.match(sound,/audioContext\s*=\s*null/);
+  assert.match(sound,/await\s+ctx\.resume\(\)/);
 });

@@ -38,9 +38,17 @@ export default function LudoClient({ code }: { code:string }) {
   useEffect(()=>{
     setSoundEnabledState(getLudoSoundEnabled());
     const unlock=()=>{void unlockLudoAudio();};
-    window.addEventListener("pointerdown",unlock,{capture:true,once:true});
-    window.addEventListener("touchstart",unlock,{capture:true,once:true,passive:true});
-    return()=>{window.removeEventListener("pointerdown",unlock,true);window.removeEventListener("touchstart",unlock,true);};
+    const resumeVisible=()=>{if(document.visibilityState==="visible")unlock();};
+    window.addEventListener("pointerdown",unlock,{capture:true});
+    window.addEventListener("touchstart",unlock,{capture:true,passive:true});
+    window.addEventListener("pageshow",unlock);
+    document.addEventListener("visibilitychange",resumeVisible);
+    return()=>{
+      window.removeEventListener("pointerdown",unlock,true);
+      window.removeEventListener("touchstart",unlock,true);
+      window.removeEventListener("pageshow",unlock);
+      document.removeEventListener("visibilitychange",resumeVisible);
+    };
   },[]);
 
   if(!room||!uid) return <main className="loading-screen"><div className="ludo-loading"><Dices size={56}/><span>{toast||"Tahta kuruluyor…"}</span></div></main>;
@@ -98,7 +106,7 @@ export default function LudoClient({ code }: { code:string }) {
     if(actionBusy||previewLudoPawnMove(currentRoom,actorUid,index)===null)return;
     playLudoSfx("select");
     setSelectedPawn(index);
-    setToast("Gideceğin rota renklendi. Parlayan hedef kareye dokunup hamleyi onayla.");
+    setToast("Parlayan hedef kareye dokunup hamleyi onayla.");
   }
   async function confirmMove(){
     if(selectedPawn===null)return;

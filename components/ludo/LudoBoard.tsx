@@ -40,21 +40,6 @@ function progressPosition(room:LudoRoomState,uid:string,progress:number): [numbe
   return null;
 }
 
-function previewPathPositions(room:LudoRoomState,uid:string,selectedPawnIndex:number|null,previewProgress:number|null) {
-  if(selectedPawnIndex===null||previewProgress===null)return [] as Array<{row:number;col:number;progress:number}>;
-  const pawn=room.players[uid]?.pawns[selectedPawnIndex];
-  if(!pawn)return [] as Array<{row:number;col:number;progress:number}>;
-  const sourceProgress=pawn.progress;
-  const firstProgress=sourceProgress<0?0:sourceProgress+1;
-  if(previewProgress<firstProgress)return [] as Array<{row:number;col:number;progress:number}>;
-  const path:Array<{row:number;col:number;progress:number}>=[];
-  for(let progress=firstProgress;progress<=previewProgress;progress++){
-    const position=progressPosition(room,uid,progress);
-    if(position)path.push({row:position[0],col:position[1],progress});
-  }
-  return path;
-}
-
 export default function LudoBoard({ room, uid, legalMoves, selectedPawnIndex, previewProgress, onPawnClick, onConfirmMove }: {
   room: LudoRoomState;
   uid: string;
@@ -67,8 +52,7 @@ export default function LudoBoard({ room, uid, legalMoves, selectedPawnIndex, pr
   const trackCells = TRACK.map(([row,col], index) => ({row,col,index}));
   const lastPawn = room.lastAction?.pawnId;
   const capturedPawn = room.lastAction?.capturedPawnId;
-  const path=previewPathPositions(room,uid,selectedPawnIndex,previewProgress);
-  const previewPosition=path.length?path[path.length-1]:null;
+  const previewPosition=previewProgress===null?null:progressPosition(room,uid,previewProgress);
   const previewColor=room.players[uid]?.color??"red";
 
   return <div className="ludo-board-wrap">
@@ -82,11 +66,9 @@ export default function LudoBoard({ room, uid, legalMoves, selectedPawnIndex, pr
       {trackCells.map(({row,col,index}) => <div key={`t${index}`} className={`ludo-cell track ${STARTS.has(index)?`safe start-${COLORS[Math.floor(index/13)]}`:""}`} style={posStyle(row,col)}>{STARTS.has(index)&&<span>✦</span>}</div>)}
       {HOME_LANES.map((lane,seat) => lane.map(([row,col],index)=><div key={`h${seat}-${index}`} className={`ludo-cell home-lane ${COLORS[seat]}`} style={posStyle(row,col)} />))}
 
-      {path.map(({row,col,progress},index)=>{
-        const target=index===path.length-1;
-        return <div key={`preview-${progress}`} aria-hidden="true" className={`ludo-preview-route ${previewColor} ${target?"target":""}`} style={posStyle(row,col)}/>;
-      })}
-      {previewPosition&&<button type="button" className="ludo-preview-target-hitbox" aria-label="Parlayan hedef kare · hamleyi onayla" title="Buraya git" onClick={onConfirmMove} style={posStyle(previewPosition.row,previewPosition.col)}/>}
+      {previewPosition&&<div className={`ludo-preview-target-slot ${previewColor}`} style={posStyle(previewPosition[0],previewPosition[1])}>
+        <button type="button" className="ludo-preview-target-hitbox" aria-label="Parlayan hedef kare · hamleyi onayla" title="Buraya git" onClick={onConfirmMove}/>
+      </div>}
 
       {Object.values(room.players).flatMap((player) => player.pawns.map((pawn,pawnIndex) => {
         let row:number, col:number;
