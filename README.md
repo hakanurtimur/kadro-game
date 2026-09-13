@@ -1,138 +1,63 @@
-# KADRO! — AI Auction Party Game
+# KADRO! — Moderatör masası
 
-Tatlı low-poly anime görsel dilinde, 2–8 kişilik browser party game MVP'si.
+Pastel, low-poly anime hissini koruyan tarayıcı açık artırma oyunu. **1 oynamayan moderatör + 2–8 yarışmacı** gerekir. Herkes nickname ve oda koduyla girer; kayıt ekranı yoktur.
 
-Oyuncular yalnızca nickname + oda koduyla girer. Üyelik, mail veya şifre ekranı yoktur. Firebase kullanıldığında görünmez Anonymous Auth yalnızca realtime oyuncu kimliği sağlar.
+## Oyun
 
-## Oyun akışı
+Odayı kuran kişi moderatördür: bakiyesi, kadrosu, teklif düğmesi ve turnuva puanı yoktur. Yarışmacılar aynı bütçeyle başlar. Moderatör görevi ve karakter evrenini hazırlatır, zarları kullanır, ihaleyi başlatır. Karakterler seçilen evrenin doğrulanmış kataloğundan gelir. Klasik ve Kaos modları korunur.
 
-1. Host nickname, bütçe ve kadro slotunu seçip oda kurar.
-2. Diğer oyuncular 5 karakterli oda koduyla lobby'ye girer.
-3. AI Game Master görev + karakter evreni + karakter havuzu üretir.
-4. Host toplam 5 zar hakkıyla görevi, tüm karakter kategorisini veya tek tek karakterleri değiştirebilir.
-5. Karakterler 15 saniyelik canlı açık artırmaya çıkar.
-6. Kazanan teklif açık artırma kapanırken bakiyeden düşer ve karakter kadroya eklenir.
-7. Boş slotu kalan 2+ oyuncu simultane taş-kağıt-makas oynar. Kazanan bedava draft'ta ilk seçimi yapar.
-8. Satılmayan karakterler sırayla ₺0'a draft edilir.
-9. AI jüri tüm kadroları göreve göre 0–100 puanlar, yorumlar ve kazananı seçer.
+Her ihale 15 saniyedir. Son üç saniyedeki teklif kalan süreyi üç saniyeye tamamlar. Oyuncu o ihaleden kalıcı olarak çekilebilir; en yüksek teklif geri alınamaz. Uygun rakip kalmadığında ihale erken kapanır. Parası ve boş slotu olan yarışmacı kalmazsa bekleyen karakterler bedava havuza geçer. En az iki eksik kadro varsa RPS ilk seçeni belirler; tek eksik kadro doğrudan seçer.
 
-## Stack
+Jüri puanı: **göreve uygunluk %50 + ekip uyumu %30 + çok yönlülük %20**. Model kriterleri yorumlar, kod ağırlıklı toplamı ve eşitlikleri hesaplar. Para, kaptan veya taktik puanı yoktur. Sonuç bir kez kaydedilir ve moderatör beş sahnede açar. Hata durumunda sahte AI puanı üretilmez.
 
-- Next.js 15.5.24 + React 19 + TypeScript
-- Firebase JS SDK 12.14 + Realtime Database
-- Firebase Anonymous Auth (UI'da görünmez)
-- Groq API — varsayılan model `openai/gpt-oss-20b`
-- CSS + özgün SVG low-poly anime maskotlar
-- Node built-in test runner ile oyun motoru testleri
+Tek tur veya üç turluk seri ilk lobide seçilir. Her tur kadro ve bütçe sıfırlanır. N oyuncuda sıra puanları N, N−1, …, 1'dir; eşitler aynı dereceyi/puanı paylaşır. Üç tur toplamında eşitlik varsa ortak şampiyon ilan edilir. İlk önizlemeden sonra katılımcı listesi kilitlenir. Sonraki seri aynı odada başlatılabilir.
 
-## Hızlı çalıştırma
+Karakter kartlarının iki güçlü yönü, zaafı ve kısa tanıtımı editoryal oyun yorumudur; biyografi veya sabit güç puanı değildir. Sonuç unvanları gerçek ihale kayıtlarına dayanır. Ses varsayılan olarak kapalıdır; azaltılmış hareket seçeneği vardır.
+
+**Moderatör sekmesi oyun boyunca açık kalmalı.** Host devri veya arka planda sunucu zamanlayıcısı bu sürümde yoktur.
+
+## Kurulum
 
 ```bash
-npm install
-cp .env.example .env.local
+npm install --include=dev
+# .env.local yoksa aşağıdaki komutla örneği kopyala; mevcut anahtarı ezmez.
+test -e .env.local || cp .env.example .env.local
+npm test
+npm run test:syntax
+npm run build
 npm run dev
 ```
 
-Ardından `http://localhost:3000` aç.
+Firebase web config varsayılanları aynı kalır. `.env.local` ve Vercel sunucu ortamına gerçek `GROQ_API_KEY` yazılır; `NEXT_PUBLIC_` öneki kullanılmaz. Model varsayılanı `openai/gpt-oss-20b`'dir. Anahtarları Git'e ekleme.
 
-### Local demo
+Gerçek jürinin çalışması için Groq anahtarı ve servis erişimi gerekir. Tur/zar içerikleri gerektiğinde katalogdan üretilebilir; jüri isteği hata verirse sonuç/seri puanı değiştirilmeden tekrar deneme sunulur.
 
-Firebase bağlantısını geçici olarak kapatıp aynı browser'da iki sekmeyle denemek için `.env.local` içine şunu ekle:
+## Patch 02'yi kuran mevcut kullanıcılar
 
-```env
-NEXT_PUBLIC_GAME_MODE=local
-```
-
-Groq key yoksa AI endpoint'leri güvenli demo içerik/jüri fallback'i döndürür. Böylece tüm oyun akışı yine test edilebilir.
-
-## Firebase ile gerçek online multiplayer
-
-`kadro-party-game-51d0c` Firebase Web App ayarları kaynak kodda güvenli public varsayılanlar olarak hazırdır. Vercel'e yedi ayrı Firebase değişkeni girmek gerekmez.
-
-Firebase Realtime Database doğru bölgede hazırdır. Firebase Console'da yalnızca:
-
-1. **Authentication → Sign-in method → Anonymous** sağlayıcısını etkinleştir.
-2. `firebase/database.rules.json` içeriğini Realtime Database Rules ekranında publish et.
-
-Adım adım yönerge: [`FIREBASE_SETUP.md`](./FIREBASE_SETUP.md)
-
-> `browserSessionPersistence` sayesinde iki sekme iki farklı anonim oyuncu kimliği alabilir. Kullanıcı hiçbir auth ekranı görmez.
-
-## Groq AI
-
-Groq Console'dan API key oluşturup yalnızca server env'ine ekle:
-
-```env
-GROQ_API_KEY=gsk_...
-GROQ_MODEL=openai/gpt-oss-20b
-```
-
-Key `NEXT_PUBLIC_` değildir; browser bundle'ına gitmez. AI çağrıları yalnızca Next.js Route Handler'lardan yapılır.
-
-AI üç yerde kullanılır:
-
-- `/api/round` → görev + kategori + benzersiz karakter havuzu
-- `/api/reroll` → görev / kategori+havuz / tek karakter zarla
-- `/api/judge` → kadroları puanla, kısa yorum yaz, kazananı seç
-
-AI geçersiz JSON döndürürse veya servis erişilemezse oyun kırılmaz; demo fallback'e geçer.
-
-## Test
+[`docs/PATCH-02.md`](docs/PATCH-02.md) dosyasını izle. **Yeni Firebase rules dosyası yayınlanmalı; eski rules boş oyunculu moderatör odalarını kabul etmez.**
 
 ```bash
-npm test
+npx --yes firebase-tools@latest deploy --only database --project kadro-party-game-51d0c
 ```
 
-Test edilen çekirdek davranışlar:
+Eski odalar otomatik dönüştürülmez. Herkes sayfayı yenileyip yeni bir oda açmalıdır. Tek bilgisayarda online deneme için üç bağımsız tarayıcı profili/cihaz kullan: bir moderatör ve iki oyuncu. Aynı anonim kimliğin iki yarışmacı gibi davranması beklenmez.
 
-- teklifin mevcut tekliften yüksek olması
-- bakiye kontrolü
-- paranın yalnızca açık artırma kapanınca düşmesi
-- karakterin kazanan kadroya eklenmesi
-- RPS beraberlik ve eleme akışı
-- bedava draft sıra rotasyonu
-- Firebase'in düşürebildiği boş array/object alanlarının normalize edilmesi
-- fallback AI içeriklerinin benzersizliği ve jüri şekli
-- local demo room/join/persist akışı
+## Yerel test modu
 
-## Vercel deploy
+`NEXT_PUBLIC_GAME_MODE=local` ile Firebase'siz yerel oda senkronizasyonu kullanılabilir. LocalStorage/BroadcastChannel modu yalnız aynı tarayıcı profili içindeki sekmeler içindir; online multiplayer değildir. Farklı sekmeler farklı oyuncu kimliği alır. Gerçek jüri için yine sunucuda Groq anahtarı gerekir.
 
-Repo'yu Vercel'e import et. **Project Settings → Environment Variables** bölümüne yalnızca gerçek AI için şunları gir:
+## Yapı
 
-```env
-GROQ_API_KEY=gsk_...
-GROQ_MODEL=openai/gpt-oss-20b
-```
+- `lib/game-engine.ts`: saf geçişler; moderatör ayrımı, çekilme, RPS, seri ve jüri kilidi.
+- `lib/judging.ts`, `lib/series.ts`: ortak rubrik, doğrulama, toplamlar, eşitlik ve seri tablosu.
+- `lib/ai/judge-content.ts`: kanonik karakter kontrolü ve tek jüri çağrısı.
+- `lib/character-profiles.ts`, `lib/game-guide.ts`: arayüzden bağımsız oyun metinleri.
+- `components/ResultShow.tsx`, `GameGuide.tsx`, `CharacterCard.tsx`, `SeriesBoard.tsx`: sunum bileşenleri.
+- `firebase/database.rules.json`: yeni moderatör oda şeması.
+- `tests/`: yerel TypeScript ile derlenen node:test testleri. Global veya makineye özel TypeScript yolu yoktur.
 
-Firebase Web config kaynak kodda hazırdır. Firebase Console'da Realtime Database, Anonymous Auth ve Rules adımları tamamlanmış olmalı. Groq env'lerini kaydettikten sonra yeniden deploy et.
+## Güvenlik sınırı
 
-## MVP güvenlik notu
+Bu, mevcut arkadaş grubu MVP mimarisini genişleten bir patch'tir; sunucu-otoriter güvenlik dönüşümü değildir. Oda üyelerinin Firebase yazma yetkisi geniştir ve AI endpoint'leri kapsamlı auth/rate-limit korumasına sahip değildir. Teknik bir oyuncu arayüzü atlatmayı deneyebilir. RPS seçimi arayüzde gizlenir, ancak veri düzeyinde commit–reveal yoktur. Rekabetçi/public yayın için sunucu doğrulaması, endpoint kotası, App Check ve gerçek emulator entegrasyon testleri gerekir.
 
-Bu sürüm arkadaş grubuyla oynanan hızlı party-game MVP'si için optimize edildi. Oda içindeki state geçişleri client transaction + engine validation ile korunuyor; ancak tamamen hileye dayanıklı bir public competitive oyun değildir. Büyük public release öncesinde host authority'yi server/Cloud Functions tarafına taşımak, rate limit, App Check ve host migration eklemek gerekir.
-
-## Proje yapısı
-
-```text
-app/
-  api/round/route.ts
-  api/reroll/route.ts
-  api/judge/route.ts
-  room/[code]/page.tsx
-components/
-  RoomClient.tsx
-  PolyAvatar.tsx
-  PolyCharacter.tsx
-  DiceButton.tsx
-lib/
-  game-engine.ts      # saf oyun kuralları / state transitions
-  game-store.ts       # Firebase vs local seçim katmanı
-  firebase-config.ts  # public Firebase defaults + optional env overrides
-  firebase-client.ts  # anonymous auth + RTDB init
-  firebase-store.ts   # atomic runTransaction adapter
-  local-store.ts      # localStorage + BroadcastChannel demo adapter
-  fallback.ts         # key yokken round/reroll/judge fallback
-  ai/groq.ts          # server-only Groq JSON helper
-firebase/
-  database.rules.json
-tests/
-```
+Groq ağ/JSON hatasında puan üretilmez. Aynı turun kaydedilmiş sonucunu görüntülemek yeni istek yapmaz; başarısız bir AI çağrısını tekrar denemek yeni token harcayabilir. Eski teslimatların SHA256SUMS/verification dosyaları tarihsel kayıttır, bu patch'in doğrulaması değildir.

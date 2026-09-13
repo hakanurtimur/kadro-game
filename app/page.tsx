@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Coins, Gamepad2, Sparkles, Users } from "lucide-react";
+import GameGuide from "@/components/GameGuide";
 import PolyAvatar from "@/components/PolyAvatar";
 import { getGameStore } from "@/lib/game-store";
 
@@ -61,10 +62,11 @@ export default function Home() {
         </div>
         <p className="hero-copy">Paranı harca, karakterleri kap, absürt göreve en iyi ekibi kur. Son sözü AI jüri söylesin.</p>
         <div className="hero-pills">
-          <span><Users size={15}/> 2–8 kişi</span>
+          <span><Users size={15}/> 1 moderatör + 2–8 oyuncu</span>
           <span><Coins size={15}/> canlı açık artırma</span>
-          <span><Sparkles size={15}/> AI oyun yöneticisi</span>
+          <span><Sparkles size={15}/> AI jüri</span>
         </div>
+        <GameGuide/>
         <div className="avatar-parade" aria-hidden="true">
           {["momo", "yuki", "kiki", "toto"].map((seed, index) => <PolyAvatar key={seed} seed={seed} size={64 + index * 3} />)}
         </div>
@@ -75,8 +77,8 @@ export default function Home() {
           <span className="tiny-label">HIZLI GİRİŞ</span>
           <span className={`mode-badge ${store.mode}`}>{store.mode === "firebase" ? "● ONLINE" : "● LOCAL DEMO"}</span>
         </div>
-        <label>Nickname</label>
-        <input value={nickname} onChange={(event) => setNickname(event.target.value)} placeholder="örn. Hakan" maxLength={20} autoComplete="off" />
+        <label htmlFor="home-nickname">Nickname</label>
+        <input id="home-nickname" value={nickname} onChange={(event) => setNickname(event.target.value)} placeholder="örn. Hakan" maxLength={20} autoComplete="off" />
 
         <div className="section-divider"><span>ODA KUR</span><span>AYARLAR</span></div>
         <div className="settings-grid">
@@ -89,7 +91,8 @@ export default function Home() {
             <div className="number-input"><input type="number" min={3} max={8} value={slots} onChange={(event) => setSlots(Number(event.target.value))}/><span>slot</span></div>
           </div>
         </div>
-        <button className="primary-button" disabled={loading} onClick={handleCreate}>{loading ? "Hazırlanıyor…" : "Oda oluştur"}<ArrowRight size={18}/></button>
+        <p className="moderator-create-note">Odayı kurarsan <b>moderatör</b> olursun; oynamazsın. Yarışmak için bir arkadaşının odasına katıl.</p>
+        <button className="primary-button" disabled={loading} onClick={handleCreate}>{loading ? "Hazırlanıyor…" : "Moderatör olarak oda kur"}<ArrowRight size={18}/></button>
 
         <div className="or"><span>veya</span></div>
         <label>Oda kodu</label>
@@ -98,7 +101,7 @@ export default function Home() {
           <button onClick={handleJoin} disabled={loading}>Katıl</button>
         </div>
         {error && <p className="inline-error">{error}</p>}
-        {store.mode === "local" && <p className="demo-note">Firebase env yokken iki ayrı sekmede farklı nickname’lerle lokal test edebilirsin.</p>}
+        {store.mode === "local" && <p className="demo-note">Firebase env yokken üç ayrı sekme aç: biri moderatör, ikisi oyuncu olsun.</p>}
       </section>
     </main>
   );

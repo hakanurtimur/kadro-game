@@ -115,3 +115,13 @@ test('malformed request values are rejected, not turned into huge/fractional poo
   }
   await assert.rejects(() => rerollContent({ ...request, kind: 'unsupported' }));
 });
+
+test('series generation avoids a repeated completed-round task without a second AI call',async()=>{
+ const {generateRoundContent}=await content();let calls=0;
+ const result=await generateRoundContent({...input,excludedScenarios:['Entrika']},async()=>{calls++;return {scenario:'Entrika',characterCategory:'Muhteşem Yüzyıl',characters:[]};});
+ assert.equal(calls,1);assert.notEqual(catalog.normalizeCatalogKey(result.scenario),'entrika');assertCanonical(result);
+});
+test('oversized scenario history is rejected before calling the provider',async()=>{
+ const {generateRoundContent}=await content();let calls=0;
+ await assert.rejects(()=>generateRoundContent({...input,excludedScenarios:Array(20).fill('x')},async()=>{calls++;return {};}));assert.equal(calls,0);
+});

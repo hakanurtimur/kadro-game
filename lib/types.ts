@@ -44,6 +44,7 @@ export type PlayerState = {
 };
 
 export type AuctionState = {
+  withdrawn?: Record<string, boolean>;
   startsAt?: number | null;
   index: number;
   currentBid: number;
@@ -59,12 +60,19 @@ export type RpsState = {
 };
 
 export type JudgeRanking = {
+  criteria?: JudgeCriteria;
+  strength?: string;
+  weakness?: string;
+  starCharacterId?: string;
+  starReason?: string;
   playerUid: string;
   score: number;
   comment: string;
 };
 
 export type JudgeResult = {
+  scoringVersion?: "rubric-v1";
+  winnerUids?: string[];
   winnerUid: string;
   rankings: JudgeRanking[];
   summary: string;
@@ -72,6 +80,13 @@ export type JudgeResult = {
 };
 
 export type RoomState = {
+  schemaVersion?: 2;
+  moderator?: { uid: string; nickname: string };
+  series?: SeriesState;
+  roundId?: string;
+  sales?: AuctionSale[];
+  presentationStep?: number;
+  judgeRequest?: { id: string; expiresAt: number } | null;
   mode?: GameMode;
   chaos?: ChaosState | null;
   code: string;
@@ -102,3 +117,21 @@ export type RoundPayload = {
 };
 
 export type GameStoreMode = "firebase" | "local";
+
+export type JudgeCriteria = { fit: number; synergy: number; versatility: number };
+export type AuctionSale = { characterId: string; name: string; buyerUid: string; price: number };
+export type SeriesRound = {
+  roundId: string;
+  roundNumber: number;
+  scenario: string;
+  rankings: JudgeRanking[];
+  points: Record<string, number>;
+  source: RoundSource;
+};
+export type SeriesState = {
+  id: string;
+  totalRounds: 1 | 3;
+  currentRound: number;
+  locked: boolean;
+  completed: Record<string, SeriesRound>;
+};

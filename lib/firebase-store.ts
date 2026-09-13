@@ -1,7 +1,7 @@
 "use client";
 
 import { get, onValue, ref, runTransaction } from "firebase/database";
-import { createInitialRoom, joinPlayer, normalizeRoomState } from "./game-engine";
+import { createModeratedRoom, joinPlayer, normalizeRoomState } from "./game-engine";
 import { getFirebaseServices } from "./firebase-client";
 import { makeRoomCode } from "./local-store";
 import type { RoomState } from "./types";
@@ -10,6 +10,9 @@ type RoomListener = (room: RoomState | null) => void;
 
 export class FirebaseGameStore {
   readonly mode = "firebase" as const;
+
+  private clockOffset = 0;
+  now() { return Date.now() + this.clockOffset; }
 
   async identity() {
     const { auth } = await getFirebaseServices();
@@ -24,7 +27,7 @@ export class FirebaseGameStore {
     for (let attempt = 0; attempt < 20; attempt++) {
       const code = makeRoomCode();
       const roomRef = ref(db, `rooms/${code}`);
-      const room = createInitialRoom({ code, hostUid: uid, nickname, budget, slots });
+      const room = createModeratedRoom({ code, hostUid: uid, nickname, budget, slots });
       const result = await runTransaction(roomRef, (current) => current === null ? room : undefined, { applyLocally: false });
       if (result.committed) return { room: normalizeRoomState(result.snapshot.val()), uid };
     }
@@ -51,10 +54,15 @@ export class FirebaseGameStore {
     return snapshot.exists() ? normalizeRoomState(snapshot.val()) : null;
   }
 
-  async subscribeRoom(code: string, listener: RoomListener) {
+  async subscribeRoom(code: string, listener: RoomListener, onError?: (error: Error) => void) {
     const { db } = await getFirebaseServices();
     const roomRef = ref(db, `rooms/${code.trim().toUpperCase()}`);
-    return onValue(roomRef, (snapshot) => listener(snapshot.exists() ? normalizeRoomState(snapshot.val()) : null));
+    const stopClock = onValue(ref(db, ".info/serverTimeOffset"), snapshot => {
+      const offset = snapshot.val(); this.clockOffset = typeof offset === "number" && Number.isFinite(offset) ? offset : 0;
+    });
+    const stopRoom = onValue(roomRef, snapshot => listener(snapshot.exists() ? normalizeRoomState(snapshot.val()) : null),
+      error => onError?.(new Error(`Veritabanı erişimi: ${error.message}`)));
+    return () => { stopRoom(); stopClock(); };
   }
 
   async mutate(code: string, transition: (room: RoomState) => RoomState) {

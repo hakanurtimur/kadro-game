@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { importTs } from './transpile-import.mjs';
+const j=await importTs('lib/judging.ts');
+const teams=['a','b'].map(playerUid=>({playerUid,nickname:playerUid,characters:[{characterId:playerUid+'c',name:'Hürrem Sultan',source:'Muhteşem Yüzyıl',price:1,acquisition:'auction'}]}));
+const raw=()=>({summary:'Özet.',rankings:teams.map(t=>({playerUid:t.playerUid,criteria:{fit:80,synergy:60,versatility:40},score:100,comment:'Yorum.',strength:'Güçlü.',weakness:'Zayıf.',starCharacterId:t.playerUid+'c',starReason:'Katkı.'})),winnerUid:'not-a-player'});
+test('rubric is exactly 50/30/20 with neither captain nor tactic',()=>{ assert.deepEqual(j.JURY_CRITERIA.map(c=>c.weight),[50,30,20]); assert.equal(j.weightedScore({fit:80,synergy:60,versatility:40}),66); });
+test('ties share victory and placement points without budget or nickname tiebreaks',()=>{const result=j.normalizeJudgement(raw(),teams);assert.deepEqual(result.winnerUids,['a','b']);assert.deepEqual(j.placementPoints(result.rankings),{a:2,b:2});});
+test('invalid criteria, numeric strings and nonfinite values are rejected',()=>{for(const v of [-1,101,NaN,Infinity,'85',null]){const r=raw();r.rankings[0].criteria.fit=v;assert.throws(()=>j.normalizeJudgement(r,teams));}});
+test('unknown, duplicate and missing competitors are rejected',()=>{const r=raw();r.rankings[0].playerUid='mod';assert.throws(()=>j.normalizeJudgement(r,teams));r.rankings[0].playerUid='b';assert.throws(()=>j.normalizeJudgement(r,teams));r.rankings.pop();assert.throws(()=>j.normalizeJudgement(r,teams));});
+test('an invented or opposing-team MVP is rejected',()=>{const r=raw();r.rankings[0].starCharacterId='bc';assert.throws(()=>j.normalizeJudgement(r,teams));});

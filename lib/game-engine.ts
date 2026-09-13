@@ -1,3 +1,5 @@
+import { normalizeJudgement } from "./judging";
+import { initialSeries, recordSeriesRound, seriesFinished } from "./series";
 import { canonicalCategory, canonicalCharacter, normalizeCatalogKey } from "./character-catalog";
 import { applyScheduledChaos, chaosSeed, CHAOS_PAUSE_MS } from "./chaos";
 import type { GameMode } from "./types";
@@ -44,6 +46,11 @@ export function normalizeRoomState(raw: any): RoomState {
   room.auction.bidderUid = room.auction.bidderUid ?? null;
   room.auction.endsAt = room.auction.endsAt ?? null;
   room.auction.startsAt = room.auction.startsAt ?? null;
+  room.auction.withdrawn = room.auction.withdrawn ?? {};
+  room.sales = (Array.isArray(room.sales) ? room.sales : Object.values(room.sales ?? {})).filter(Boolean);
+  room.presentationStep = Math.max(0, Math.min(4, Number(room.presentationStep) || 0));
+  room.judgeRequest = room.judgeRequest ?? null;
+  if (room.series) room.series.completed = room.series.completed ?? {};
 
   if (room.rps) {
     room.rps.contenders = Array.isArray(room.rps.contenders)
@@ -82,6 +89,7 @@ function assertHost(room: RoomState, uid: string) {
 }
 
 function assertPlayer(room: RoomState, uid: string) {
+  if (room.moderator?.uid === uid) throw new GameRuleError("Moderatör oynamaz; masayı yönetir.");
   const player = room.players[uid];
   if (!player) throw new GameRuleError("Bu odada değilsin.");
   return player;
@@ -149,7 +157,7 @@ function resetPlayerForRound(room: RoomState) {
 }
 
 function playerOrder(room: RoomState) {
-  return Object.values(room.players).sort((a, b) => a.seat - b.seat);
+  return Object.values(room.players).filter(p => p.uid !== room.moderator?.uid).sort((a, b) => a.seat - b.seat);
 }
 
 function openSlotPlayers(room: RoomState) {
@@ -272,12 +280,13 @@ export function createInitialRoom(input: {
 
 export function joinPlayer(room: RoomState, input: { uid: string; nickname: string; now?: number }): RoomState {
   const next = cloneRoom(room);
-  if (next.status !== "lobby") throw new GameRuleError("Bu oyun çoktan başlamış.");
-  if (next.players[input.uid]) return next;
+  if (input.uid === next.moderator?.uid || next.players[input.uid]) return next;
+  if (next.status !== "lobby" || next.series?.locked) throw new GameRuleError("Bu oyun çoktan başlamış; yeni seri bekleniyor.");
   if (Object.keys(next.players).length >= 8) throw new GameRuleError("Oda dolu.");
 
   const nickname = normalizedNickname(input.nickname);
   if (!nickname) throw new GameRuleError("Bir nickname yazmalısın.");
+  if (next.moderator?.nickname.toLocaleLowerCase("tr-TR") === nickname.toLocaleLowerCase("tr-TR")) throw new GameRuleError("Bu nickname moderatöre ait.");
   if (Object.values(next.players).some((player) => player.nickname.toLocaleLowerCase("tr-TR") === nickname.toLocaleLowerCase("tr-TR"))) {
     throw new GameRuleError("Bu nickname odada kullanılıyor.");
   }
@@ -296,6 +305,7 @@ export function joinPlayer(room: RoomState, input: { uid: string; nickname: stri
 export function applyRoundPreview(room: RoomState, actorUid: string, payload: RoundPayload, now = Date.now()): RoomState {
   const next = cloneRoom(room);
   assertHost(next, actorUid);
+  if (next.schemaVersion === 2 && next.status !== "lobby" && next.status !== "preview") throw new GameRuleError("Önce mevcut turu bitir.");
   if (Object.keys(next.players).length < 2) throw new GameRuleError("Oyunu başlatmak için en az 2 oyuncu lazım.");
   if (!payload.scenario.trim() || !payload.characterCategory.trim()) throw new GameRuleError("Tur içeriği eksik.");
   if (payload.characters.length < Object.keys(next.players).length * next.slots) {
@@ -308,6 +318,10 @@ export function applyRoundPreview(room: RoomState, actorUid: string, payload: Ro
   next.roundSource = payload.source;
   next.characters = materializeCharacters(verifiedSeeds(next.characterCategory, payload.characters));
   next.rerollsLeft = 5;
+  if (next.series) { next.series.locked = true; next.roundId = `${next.series.id}-r${next.series.currentRound}`; }
+  next.sales = [];
+  next.judgeRequest = null;
+  next.presentationStep = 0;
   next.auction = { index: 0, currentBid: 0, bidderUid: null, endsAt: null };
   next.rps = null;
   next.starterUid = null;
@@ -398,12 +412,14 @@ export function startAuction(room: RoomState, actorUid: string, now = Date.now()
   return next;
 }
 
-export function placeBid(room: RoomState, uid: string, amount: number, now = Date.now()): RoomState {
+export function placeBid(room: RoomState, uid: string, amount: number, now = Date.now(), expectedCharacterId?: string): RoomState {
   const next = cloneRoom(room);
   const player = assertPlayer(next, uid);
   if (next.status !== "auction") throw new GameRuleError("Şu an açık artırma yok.");
   if (next.auction.startsAt && now < next.auction.startsAt) throw new GameRuleError("Kaos kartı okunuyor; ihale birazdan açılacak.");
   if (next.auction.endsAt && now >= next.auction.endsAt) throw new GameRuleError("Bu ihalenin süresi bitti.");
+  if (expectedCharacterId && next.characters[next.auction.index]?.id !== expectedCharacterId) throw new GameRuleError("Bu karakterin ihalesi geçti.");
+  if (next.auction.withdrawn?.[uid]) throw new GameRuleError("Bu ihaleden çekildin; sonraki karakteri bekle.");
   if (player.team.length >= next.slots) throw new GameRuleError("Kadron zaten dolu.");
   if (!Number.isInteger(amount) || amount <= next.auction.currentBid) throw new GameRuleError("Teklif mevcut tekliften daha yüksek olmalı.");
   if (amount > player.balance) throw new GameRuleError("Bakiye yetmiyor.");
@@ -434,8 +450,12 @@ export function closeAuction(
   const current = next.characters[next.auction.index];
   if (!current || current.id !== expectedCharacterId) throw new GameRuleError("Bu açık artırma artık aktif değil.");
 
+  if (next.schemaVersion === 2 && !auctionCanClose(next, now)) throw new GameRuleError("Rakipler hâlâ teklif verebilir; ihale erken kapanamaz.");
+
   const bidder = next.auction.bidderUid ? next.players[next.auction.bidderUid] : null;
   if (bidder && next.auction.currentBid > 0 && bidder.team.length < next.slots && bidder.balance >= next.auction.currentBid) {
+    next.sales ??= [];
+    next.sales.push({characterId: current.id, name: current.name, buyerUid: bidder.uid, price: next.auction.currentBid});
     bidder.balance -= next.auction.currentBid;
     bidder.team.push({
       characterId: current.id,
@@ -462,6 +482,11 @@ export function closeAuction(
   }
 
   const nextIndex = next.auction.index + 1;
+  if (next.schemaVersion === 2 && !openSlotPlayers(next).some(p => p.balance > 0)) {
+    for (const character of next.characters) if (character.status === "queued") character.status = "unsold";
+    next.auction.index = next.characters.length;
+    beginPostAuction(next); next.updatedAt = now; return next;
+  }
   if (nextIndex >= next.characters.length) {
     next.auction.index = nextIndex;
     beginPostAuction(next);
@@ -481,6 +506,7 @@ export function submitRpsChoice(room: RoomState, uid: string, move: RpsMove, now
   assertPlayer(next, uid);
   if (next.status !== "rps" || !next.rps) throw new GameRuleError("Taş-kağıt-makas şu an aktif değil.");
   if (!next.rps.contenders.includes(uid)) throw new GameRuleError("Bu turda beklemedesin.");
+  if (!["rock","paper","scissors"].includes(move)) throw new GameRuleError("Geçersiz seçim.");
   if (next.rps.choices[uid]) throw new GameRuleError("Seçimini zaten yaptın.");
 
   next.rps.choices[uid] = move;
@@ -556,10 +582,19 @@ export function pickLeftover(room: RoomState, uid: string, characterId: string, 
   return next;
 }
 
-export function saveJudge(room: RoomState, actorUid: string, judge: JudgeResult, now = Date.now()): RoomState {
+export function saveJudge(room: RoomState, actorUid: string, judge: JudgeResult, now = Date.now(), expectedRoundId?: string, requestId?: string): RoomState {
   const next = cloneRoom(room);
   assertHost(next, actorUid);
   if (next.status !== "results") throw new GameRuleError("Jüri ancak kadrolar hazırken çalışır.");
+  if (expectedRoundId !== undefined && expectedRoundId !== next.roundId) throw new GameRuleError("Jüri başka bir tura ait.");
+  if (next.judge) return next;
+  if (requestId !== undefined && next.judgeRequest?.id !== requestId) throw new GameRuleError("Jüri isteği artık aktif değil.");
+  if (openSlotPlayers(next).length) throw new GameRuleError("Önce tüm kadrolar tamamlanmalı.");
+  if (next.schemaVersion === 2) {
+    next.judge = normalizeJudgement(judge, playerOrder(next).map(p=>({playerUid:p.uid,nickname:p.nickname,characters:p.team})), judge.source);
+    next.judgeRequest = null; next.presentationStep = 0;
+    recordSeriesRound(next); next.updatedAt = now; return next;
+  }
 
   const playerIds = Object.keys(next.players).sort();
   const rankingIds = judge.rankings.map((ranking) => ranking.playerUid).sort();
@@ -577,4 +612,73 @@ export function saveJudge(room: RoomState, actorUid: string, judge: JudgeResult,
   };
   next.updatedAt = now;
   return next;
+}
+
+/** Legacy createInitialRoom is retained for existing room data; all new UI rooms use this factory. */
+export function createModeratedRoom(input: Parameters<typeof createInitialRoom>[0]): RoomState {
+  const room = createInitialRoom(input);
+  room.schemaVersion = 2;
+  room.moderator = { uid: input.hostUid, nickname: room.players[input.hostUid].nickname };
+  room.players = {};
+  room.series = initialSeries(`s${room.createdAt}`);
+  room.roundId = `${room.series.id}-r1`;
+  room.sales = []; room.presentationStep = 0; room.judgeRequest = null;
+  return room;
+}
+export function configureSeries(room: RoomState, actorUid: string, totalRounds: 1 | 3, now = Date.now()): RoomState {
+  const next = cloneRoom(room); assertHost(next, actorUid);
+  if (!next.series || next.status !== "lobby" || next.series.locked) throw new GameRuleError("Seri ayarı yalnız ilk lobide değişir.");
+  if (totalRounds !== 1 && totalRounds !== 3) throw new GameRuleError("Tek tur veya üç tur seç.");
+  next.series.totalRounds = totalRounds; next.updatedAt = now; return next;
+}
+function clearRound(next: RoomState, now: number) {
+  next.status = "lobby"; next.characters = []; next.scenario = ""; next.characterCategory = "";
+  next.judge = null; next.judgeRequest = null; next.presentationStep = 0; next.sales = [];
+  next.rps = null; next.chaos = null; next.starterUid = null; next.draftTurnUid = null;
+  next.auction = {index:0,currentBid:0,bidderUid:null,endsAt:null,startsAt:null,withdrawn:{}};
+  next.rerollsLeft = 5;
+  if (next.series) next.roundId = `${next.series.id}-r${next.series.currentRound}`;
+  resetPlayerForRound(next); next.updatedAt = now;
+}
+export function nextSeriesRound(room: RoomState, actorUid: string, now = Date.now()): RoomState {
+  const next = cloneRoom(room); assertHost(next,actorUid);
+  if (!next.series || next.status !== "results" || !next.judge || !next.series.completed[`r${next.series.currentRound}`]) throw new GameRuleError("Önce bu turun jüri sonucu kaydedilmeli.");
+  if (next.series.currentRound >= next.series.totalRounds) throw new GameRuleError("Seri bitti; yeni seri başlat.");
+  next.series.currentRound += 1; clearRound(next,now); return next;
+}
+export function resetSeries(room: RoomState, actorUid: string, now = Date.now()): RoomState {
+  const next = cloneRoom(room); assertHost(next,actorUid);
+  if (!seriesFinished(next)) throw new GameRuleError("Önce seri tamamlanmalı.");
+  next.series = initialSeries(`s${Math.max(now, next.updatedAt + 1)}`, next.series!.totalRounds);
+  clearRound(next,now); return next;
+}
+export function auctionCanClose(room: RoomState, now = Date.now()): boolean {
+  if (room.status !== "auction" || (room.auction.startsAt && now < room.auction.startsAt)) return false;
+  if (room.auction.endsAt && now >= room.auction.endsAt) return true;
+  return !openSlotPlayers(room).some(p => p.uid !== room.auction.bidderUid && !room.auction.withdrawn?.[p.uid] && p.balance > room.auction.currentBid);
+}
+export function withdrawAuction(room: RoomState, uid: string, expectedCharacterId: string, now = Date.now()): RoomState {
+  const next = cloneRoom(room); const player = assertPlayer(next,uid);
+  if (next.status !== "auction" || next.characters[next.auction.index]?.id !== expectedCharacterId) throw new GameRuleError("Bu ihale artık aktif değil.");
+  if (next.auction.startsAt && now < next.auction.startsAt) throw new GameRuleError("Önce kaos kartının süresi dolmalı.");
+  if (next.auction.endsAt && now >= next.auction.endsAt) throw new GameRuleError("İhale bitti.");
+  if (next.auction.bidderUid === uid) throw new GameRuleError("En yüksek teklifini geri alamazsın.");
+  if (player.team.length >= next.slots) throw new GameRuleError("Kadron zaten dolu.");
+  next.auction.withdrawn ??= {}; next.auction.withdrawn[uid] = true; next.updatedAt = now; return next;
+}
+export function claimJudging(room: RoomState, actorUid: string, id: string, now = Date.now()): RoomState {
+  const next=cloneRoom(room); assertHost(next,actorUid);
+  if(next.status!=="results" || next.judge || openSlotPlayers(next).length) throw new GameRuleError("Jüri yalnız tamamlanan ve puanlanmamış turda çağrılır.");
+  if(!/^[a-zA-Z0-9_-]{1,80}$/.test(id)) throw new GameRuleError("Geçersiz istek kimliği.");
+  if(next.judgeRequest && next.judgeRequest.expiresAt>now) throw new GameRuleError("Jüri zaten değerlendiriyor.");
+  next.judgeRequest={id,expiresAt:now+60_000};next.updatedAt=now;return next;
+}
+export function releaseJudging(room: RoomState, actorUid: string, id: string, now = Date.now()): RoomState {
+  const next=cloneRoom(room); assertHost(next,actorUid);
+  if(next.judgeRequest?.id===id) {next.judgeRequest=null;next.updatedAt=now;} return next;
+}
+export function advancePresentation(room: RoomState, actorUid: string, step: number, now = Date.now()): RoomState {
+  const next=cloneRoom(room); assertHost(next,actorUid);
+  if(!next.judge || next.status!=="results" || !Number.isInteger(step) || step<0 || step>4) throw new GameRuleError("Sonuç sahnesi hazır değil.");
+  next.presentationStep=Math.max(next.presentationStep ?? 0,step);next.updatedAt=now;return next;
 }

@@ -1,13 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 let ts;
-try {
-  const mod = await import('typescript');
-  ts = mod.default ?? mod;
-} catch {
-  const mod = await import('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript/lib/typescript.js');
-  ts = mod.default ?? mod;
-}
+try { const mod = await import('typescript'); ts = mod.default ?? mod; }
+catch { throw new Error('npm install --include=dev çalıştır: TypeScript testler için gerekli.'); }
 
 const roots = ['app', 'components', 'lib'];
 const files = [];

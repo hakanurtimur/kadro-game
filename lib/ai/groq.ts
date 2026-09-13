@@ -19,6 +19,7 @@ export async function callGroqJson<T>(input: {
 
   const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
+    signal: AbortSignal.timeout(30_000),
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
@@ -26,6 +27,7 @@ export async function callGroqJson<T>(input: {
     body: JSON.stringify({
       model: process.env.GROQ_MODEL || "openai/gpt-oss-20b",
       temperature: input.temperature ?? 0.9,
+      max_completion_tokens: 4096,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: input.system },

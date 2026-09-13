@@ -18,12 +18,13 @@ const { LocalGameStore } = await importTs('lib/local-store.ts');
 test('local store creates a room and a second session can join it', async () => {
   const hostStore = new LocalGameStore();
   const created = await hostStore.createRoom('Hakan', 100, 5);
-  assert.equal(created.room.players[created.uid].nickname, 'Hakan');
+  assert.equal(created.room.moderator.nickname, 'Hakan');
+  assert.deepEqual(created.room.players, {});
 
   globalThis.sessionStorage = new MemoryStorage();
   const guestStore = new LocalGameStore();
   const joined = await guestStore.joinRoom(created.room.code, 'Can');
-  assert.equal(Object.keys(joined.room.players).length, 2);
+  assert.equal(Object.keys(joined.room.players).length, 1);
   assert.equal(joined.room.players[joined.uid].nickname, 'Can');
 });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Bot,
@@ -18,6 +18,13 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import GameGuide, { RubricCard } from "@/components/GameGuide";
+import CharacterCard, { CharacterProfile, TableView } from "@/components/CharacterCard";
+import ResultShow from "@/components/ResultShow";
+import SeriesBoard, { SeriesPicker } from "@/components/SeriesBoard";
+import { useTableExperience, ExperienceControls } from "@/components/TableExperience";
+import { stageHelp } from "@/lib/game-guide";
+import { sceneTheme } from "@/lib/presentation";
 import { ChaosBanner, ChaosHistory, ModePicker } from "@/components/ChaosMode";
 import DiceButton from "@/components/DiceButton";
 import PolyAvatar from "@/components/PolyAvatar";
@@ -34,6 +41,7 @@ import {
   setGameMode,
   startAuction,
   submitRpsChoice,
+  auctionCanClose, withdrawAuction, configureSeries, claimJudging, releaseJudging, advancePresentation, nextSeriesRound, resetSeries,
 } from "@/lib/game-engine";
 import { getGameStore } from "@/lib/game-store";
 import type { GameMode, CharacterSeed, JudgeResult, RoomState, RoundPayload, RpsMove } from "@/lib/types";
@@ -52,8 +60,10 @@ export default function RoomClient({ code }: { code: string }) {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState("");
   const [now, setNow] = useState(Date.now());
+  const experience = useTableExperience();
+  const lastSoundState = useRef<{sales:number;bid:number;round?:string;step:number}|null>(null);
 
-  const players = useMemo(() => room ? Object.values(room.players).sort((a, b) => a.seat - b.seat) : [], [room]);
+  const players = useMemo(() => room ? Object.values(room.players).filter(p => p.uid !== room.moderator?.uid).sort((a, b) => a.seat - b.seat) : [], [room]);
   const me = uid && room ? room.players[uid] : null;
   const isHost = Boolean(uid && room?.hostUid === uid);
   const currentCharacter = room?.status === "auction" ? room.characters[room.auction.index] : null;
@@ -82,7 +92,7 @@ export default function RoomClient({ code }: { code: string }) {
             return;
           }
           setRoom(nextRoom);
-        });
+        }, (error) => { if(active) setToast(error.message); });
       } catch (error) {
         setToast(error instanceof Error ? error.message : "Odaya bağlanılamadı.");
       }
@@ -94,9 +104,9 @@ export default function RoomClient({ code }: { code: string }) {
   }, [code, store]);
 
   useEffect(() => {
-    const interval = window.setInterval(() => setNow(Date.now()), 250);
+    const interval = window.setInterval(() => setNow(store.now()), 250);
     return () => window.clearInterval(interval);
-  }, []);
+  }, [store]);
 
   const mutate = useCallback(async (transition: (current: RoomState) => RoomState) => {
     try {
@@ -110,22 +120,26 @@ export default function RoomClient({ code }: { code: string }) {
   const closeCurrentAuction = useCallback(async (characterId: string) => {
     if (!uid || !isHost) return;
     try {
-      await mutate((current) => closeAuction(current, uid, characterId, Date.now()));
+      const actionNow = store.now();
+      await mutate((current) => {
+        if(!auctionCanClose(current, actionNow)) throw new Error("İhale henüz kapanmaya hazır değil.");
+        return closeAuction(current, uid, characterId, actionNow);
+      });
     } catch {
       // A stale timer may race with a manual close; the toast already explains it.
     }
-  }, [isHost, mutate, uid]);
+  }, [isHost, mutate, uid, store]);
 
   useEffect(() => {
-    if (!room || !uid || !isHost || room.status !== "auction" || !room.auction.endsAt || !currentCharacter) return;
+    if (!room || room.schemaVersion !== 2 || !uid || !isHost || room.status !== "auction" || !room.auction.endsAt || !currentCharacter) return;
     const characterId = currentCharacter.id;
-    const delay = Math.max(20, room.auction.endsAt - Date.now() + 40);
+    const delay = auctionCanClose(room,store.now()) ? 120 : Math.max(20, room.auction.endsAt - store.now() + 40);
     const timeout = window.setTimeout(() => closeCurrentAuction(characterId), delay);
     return () => window.clearTimeout(timeout);
-  }, [closeCurrentAuction, currentCharacter, isHost, room, uid]);
+  }, [closeCurrentAuction, currentCharacter, isHost, room, uid, store]);
 
   useEffect(() => {
-    if (room && uid && !room.players[uid]) {
+    if (room && uid && !room.players[uid] && room.moderator?.uid !== uid) {
       setToast("Bu sekme odaya oyuncu olarak katılmamış. Ana sayfadan tekrar gir.");
     }
   }, [room, uid]);
@@ -165,12 +179,12 @@ export default function RoomClient({ code }: { code: string }) {
   }
 
   async function generateRound() {
-    if (!room || !uid || !isHost) return;
+    if (!room || !uid || !isHost || busy) return;
     setBusy(true);
     setToast("AI oyun masasını hazırlıyor…");
     try {
-      const payload = await fetchJson("/api/round", { playerCount: players.length, slots: room.slots }) as RoundPayload;
-      await mutate(againstSnapshot(room, (current) => applyRoundPreview(current, uid, payload)));
+      const payload = await fetchJson("/api/round", { playerCount: players.length, slots: room.slots, excludedScenarios: Object.values(room.series?.completed ?? {}).map(r=>r.scenario) }) as RoundPayload;
+      await mutate(againstSnapshot(room, (current) => applyRoundPreview(current, uid, payload, store.now())));
       setToast(payload.source === "groq" ? "AI turu hazırladı ✨" : "Hazır katalog turu oluşturuldu; evren ve karakterler eşleşiyor.");
     } catch (error) {
       setToast(error instanceof Error ? error.message : "Tur üretilemedi.");
@@ -250,7 +264,8 @@ export default function RoomClient({ code }: { code: string }) {
   async function beginAuction() {
     if (!room || !uid || !isHost) return;
     try {
-      await mutate((current) => startAuction(current, uid, Date.now()));
+      const actionNow = store.now();
+      await mutate((current) => startAuction(current, uid, actionNow));
       setToast("Açık artırma başladı! 🔔");
     } catch {
       // toast handled by mutate
@@ -258,10 +273,11 @@ export default function RoomClient({ code }: { code: string }) {
   }
 
   async function bid(increment: number, allIn = false) {
-    if (!room || !uid || !me) return;
+    if (!room || !uid || !me || isHost) return;
     const amount = allIn ? me.balance : room.auction.currentBid + increment;
     try {
-      await mutate((current) => placeBid(current, uid, amount, Date.now()));
+      const actionNow = store.now(); const characterId = room.characters[room.auction.index]?.id;
+      await mutate((current) => placeBid(current, uid, amount, actionNow, characterId));
     } catch {
       // toast handled by mutate
     }
@@ -286,35 +302,52 @@ export default function RoomClient({ code }: { code: string }) {
   }
 
   async function runJudge() {
-    if (!room || !uid || !isHost) return;
-    setBusy(true);
-    setToast("AI jüri kadroları didikliyor…");
+    if (!room || !uid || !isHost || busy || room.judge) return;
+    const requestId = crypto.randomUUID(); const actionNow = store.now();
+    setBusy(true); setToast("AI jüri kriterleri değerlendiriyor…");
     try {
-      const teams = players.map((player) => ({
-        playerUid: player.uid,
-        nickname: player.nickname,
-        balance: player.balance,
-        characters: player.team.map((member) => member.name),
-      }));
-      const judge = await fetchJson("/api/judge", {
-        scenario: room.scenario,
-        characterCategory: room.characterCategory,
-        teams,
-      }) as JudgeResult;
-      await mutate((current) => saveJudge(current, uid, judge));
-      setToast(judge.source === "groq" ? "Jüri kararını verdi 🏆" : "Demo jüri kararını verdi.");
-    } catch (error) {
-      setToast(error instanceof Error ? error.message : "Jüri cevap veremedi.");
-    } finally {
-      setBusy(false);
-    }
+      const locked = await mutate(current => claimJudging(current, uid, requestId, actionNow));
+      const teams = Object.values(locked.players).filter(p=>p.uid!==locked.moderator?.uid).sort((a,b)=>a.seat-b.seat).map(p=>({playerUid:p.uid,nickname:p.nickname,characters:p.team}));
+      const judge = await fetchJson("/api/judge", { scenario:locked.scenario,characterCategory:locked.characterCategory,slots:locked.slots,moderatorUid:locked.moderator?.uid,teams }) as JudgeResult;
+      const savedAt = store.now();
+      await mutate(current => saveJudge(current,uid,judge,savedAt,locked.roundId,requestId));
+      setToast("Jüri kaydedildi. Sonucu sahne sahne açabilirsin ✦");
+    } catch(error) {
+      try { const failedAt=store.now(); await store.mutate(code,current=>releaseJudging(current,uid,requestId,failedAt)); } catch { /* lease expires if connection is lost */ }
+      setToast(error instanceof Error ? error.message : "Jüri sonuç veremedi. Puanlar değişmedi.");
+    } finally { setBusy(false); }
   }
+
+  async function moderatorAction(action: (r:RoomState,actor:string,at:number)=>RoomState) {
+    if(!uid || !isHost || busy)return;
+    setBusy(true); const at=store.now();
+    try { await mutate(current=>action(current,uid,at)); } catch { /* mutate shows error */ } finally {setBusy(false);}
+  }
+  async function withdraw() {
+    if(!room || !uid || !me || isHost)return;
+    const id=room.characters[room.auction.index]?.id;const at=store.now();
+    try {await mutate(current=>withdrawAuction(current,uid,id,at));}catch { /* mutate shows error */ }
+  }
+
+  useEffect(()=>{
+    if(!room)return;
+    const current={sales:room.sales?.length??0,bid:room.auction.currentBid,round:room.roundId,step:room.presentationStep??0};
+    const previous=lastSoundState.current; lastSoundState.current=current;
+    if(!previous || previous.round!==current.round)return;
+    if(current.step===4 && previous.step<4)experience.play('win');
+    else if(current.sales>previous.sales)experience.play('sale');
+    else if(current.bid>previous.bid)experience.play('bid');
+  },[room,experience.play]);
 
   if (!room || !uid) {
-    return <main className="loading-screen"><div className="loading-mascot"><PolyAvatar seed="loading" size={84}/><span>KADRO masası kuruluyor…</span></div></main>;
+    return <main className="loading-screen"><div className="loading-mascot"><PolyAvatar seed="loading" size={84}/><span>{toast || "KADRO masası kuruluyor…"}</span>{toast&&<button className="secondary-button" onClick={()=>router.push("/")}>Ana sayfa</button>}</div></main>;
   }
 
-  if (!me) {
+  if (room.schemaVersion !== 2) {
+    return <main className="loading-screen"><section className="empty-card kawaii-card"><h2>Yeni moderatör masası hazır.</h2><p>Bu oda önceki sürümle açılmış. Oyuncu kadrolarını değiştirmemek için eski oda otomatik dönüştürülmedi. Herkes sayfayı yenilesin ve yeni bir oda açın.</p><button className="primary-button" onClick={()=>router.push("/")}>Yeni oda aç</button></section></main>;
+  }
+
+  if (!me && !isHost) {
     return (
       <main className="loading-screen">
         <div className="empty-card kawaii-card">
@@ -326,14 +359,14 @@ export default function RoomClient({ code }: { code: string }) {
     );
   }
 
-  const host = room.players[room.hostUid];
+  const host = room.moderator ?? room.players[room.hostUid];
   const unsoldCharacters = room.characters.filter((character) => character.status === "unsold");
   const myRpsChoice = room.rps?.choices[uid];
   const rpsContender = Boolean(room.rps?.contenders.includes(uid));
   const draftPlayer = room.draftTurnUid ? room.players[room.draftTurnUid] : null;
 
   return (
-    <main className="room-shell">
+    <main className={`room-shell ${experience.reducedMotion ? "reduce-motion" : ""}`} data-scene={sceneTheme(room.scenario)}>
       <div className="soft-grid" />
       <header className="room-topbar">
         <button className="mini-logo" onClick={() => router.push("/")}>KADRO<span>!</span></button>
@@ -343,16 +376,21 @@ export default function RoomClient({ code }: { code: string }) {
         </div>
         <div className="me-chip">
           <PolyAvatar seed={uid} size={40}/>
-          <div><small>{me.nickname}</small><strong>₺{me.balance}</strong></div>
+          <div><small>{isHost ? host?.nickname : me?.nickname}</small><strong>{isHost ? "MODERATÖR" : `₺${me?.balance ?? 0}`}</strong></div>
         </div>
       </header>
+
+      <div className="table-toolbar"><div className="moderator-badge"><PolyAvatar seed={room.hostUid} size={30}/><b>{host?.nickname || "Moderatör"}</b><span>masayı yönetiyor · oynamıyor</span></div><GameGuide/><ExperienceControls experience={experience}/></div>
+      <p className="stage-help" role="status">{stageHelp(room)}</p>
+      {room.schemaVersion !== 2 && <div className="legacy-notice">Bu oda önceki sürüme ait. Moderatör ve turnuva özellikleri için ana sayfadan yeni oda oluştur.</div>}
+      {room.status !== "results" && <SeriesBoard room={room}/>}
 
       {room.status === "lobby" && (
         <section className="lobby-screen game-section">
           <div className="lobby-main kawaii-card">
             <div className="section-kicker"><Users size={16}/> OYUNCULAR TOPLANIYOR</div>
             <h2>Masada kimler var?</h2>
-            <p className="section-copy">Oda kodunu arkadaşlarına at. Herkes gelince AI ilk turu hazırlasın.</p>
+            <p className="section-copy">Oda kodunu yarışmacılara gönder. Moderatör kadroya dahil değil; herkes gelince tur hazırlanacak.</p>
             <div className="players-grid">
               {players.map((player) => (
                 <article className="player-tile" key={player.uid}>
@@ -364,7 +402,7 @@ export default function RoomClient({ code }: { code: string }) {
               {Array.from({ length: Math.max(0, 4 - players.length) }).map((_, index) => <div className="empty-player" key={index}>+</div>)}
             </div>
             {isHost ? (
-              <button className="primary-button jumbo" disabled={busy || players.length < 2} onClick={generateRound}>
+              <button className="primary-button jumbo" disabled={busy || players.length < 2 || room.schemaVersion !== 2} onClick={generateRound}>
                 <Sparkles size={20}/>{players.length < 2 ? "En az 2 oyuncu lazım" : "AI turu hazırlasın"}
               </button>
             ) : <div className="waiting-pill"><Hourglass size={16}/> {host?.nickname || "Host"} oyunu başlatacak</div>}
@@ -374,7 +412,9 @@ export default function RoomClient({ code }: { code: string }) {
             <div className="big-stat"><small>Bütçe</small><strong>₺{room.budget}</strong></div>
             <div className="big-stat"><small>Kadro</small><strong>{room.slots}<em> slot</em></strong></div>
             <ModePicker value={room.mode ?? "classic"} disabled={!isHost || busy} onChange={selectMode}/>
-            <div className="rule-note">Karakterleri açık artırmada topla. Para biterse üzülme; satılmayan karakterler için RPS sonrası bedava draft var.</div>
+            {room.series&&<SeriesPicker value={room.series.totalRounds} disabled={!isHost||busy||room.series.locked} onChange={rounds=>moderatorAction((r,a,at)=>configureSeries(r,a,rounds,at))}/>}
+            <div className="rule-note">{players.length} yarışmacı + 1 moderatör. Paralar oyuncular içindir; moderatör jüri sıralamasında yer almaz.</div>
+            <RubricCard compact/>
           </aside>
         </section>
       )}
@@ -402,15 +442,12 @@ export default function RoomClient({ code }: { code: string }) {
             </article>
           </div>
 
+          <RubricCard/>
           <div className="character-pool kawaii-card">
             <div className="pool-head"><div><span className="tiny-label">KARAKTER HAVUZU</span><h3>Kimler geliyor?</h3></div><span className="source-chip">{room.roundSource === "groq" ? "AI + katalog" : "hazır katalog"}</span></div>
             <div className="character-chip-grid">
               {room.characters.map((character, index) => (
-                <div className="character-chip" key={character.id}>
-                  <PolyCharacter name={character.name} small/>
-                  <div><strong>{character.name}</strong><small>{character.source}</small></div>
-                  {isHost && <DiceButton label="" compact disabled={busy || room.rerollsLeft <= 0} onClick={() => rerollCharacter(index)}/>} 
-                </div>
+                <CharacterCard key={character.id} character={character} action={isHost ? <DiceButton label="" compact disabled={busy || room.rerollsLeft<=0} onClick={()=>rerollCharacter(index)}/> : undefined}/>
               ))}
             </div>
           </div>
@@ -436,18 +473,21 @@ export default function RoomClient({ code }: { code: string }) {
               <div className="auction-progress"><span style={{ width: `${timerPercent}%` }}/></div>
               <PolyCharacter name={currentCharacter.name} source={currentCharacter.source}/>
               <div className="auction-title"><h2>{currentCharacter.name}</h2><p>{currentCharacter.source}</p></div>
-              <div className="price-stack">
+              <CharacterProfile character={currentCharacter} expanded/>
+              <div className="price-stack" key={`${currentCharacter.id}-${room.auction.currentBid}`}>
                 <small>EN YÜKSEK TEKLİF</small>
                 <strong>₺{room.auction.currentBid}</strong>
                 <span>{topBidder ? `${topBidder.nickname} önde` : "Henüz teklif yok"}</span>
               </div>
-              <div className="bid-controls">
+              {me && !isHost && <div className="bid-controls">
                 {[1, 5, 10].map((increment) => (
-                  <button key={increment} onClick={() => bid(increment)} disabled={chaosPaused || remainingMs <= 0 || me.team.length >= room.slots || room.auction.currentBid + increment > me.balance}>+₺{increment}</button>
+                  <button key={increment} onClick={() => bid(increment)} disabled={Boolean(room.auction.withdrawn?.[uid]) || chaosPaused || remainingMs <= 0 || me.team.length >= room.slots || room.auction.currentBid + increment > me.balance}>+₺{increment}</button>
                 ))}
-                <button className="all-in" onClick={() => bid(0, true)} disabled={chaosPaused || remainingMs <= 0 || me.team.length >= room.slots || me.balance <= room.auction.currentBid}>ALL IN</button>
-              </div>
-              {isHost && <button className="host-skip" disabled={chaosPaused} onClick={() => closeCurrentAuction(currentCharacter.id)}>Şimdi kapat <ChevronRight size={15}/></button>}
+                <button className="all-in" onClick={() => bid(0, true)} disabled={Boolean(room.auction.withdrawn?.[uid]) || chaosPaused || remainingMs <= 0 || me.team.length >= room.slots || me.balance <= room.auction.currentBid}>ALL IN</button>
+              </div>}
+              {me && !isHost && <button className="withdraw-button" disabled={chaosPaused || remainingMs<=0 || room.auction.bidderUid===uid || Boolean(room.auction.withdrawn?.[uid]) || me.team.length>=room.slots} onClick={withdraw}>{room.auction.withdrawn?.[uid] ? "Bu ihaleden çekildin · sıradaki kartı bekle" : "Bu ihaleden çekil"}</button>}
+              {isHost && <div className="moderator-auction-note">Teklif vermezsin; masayı yönetiyorsun. Rakip teklif kalmazsa ihale otomatik kapanır.</div>}
+              {isHost && <button className="host-skip" disabled={chaosPaused || !auctionCanClose(room,now)} onClick={() => closeCurrentAuction(currentCharacter.id)}>İhaleyi sonuçlandır <ChevronRight size={15}/></button>}
             </section>
 
             <aside className="auction-sidebar">
@@ -461,14 +501,7 @@ export default function RoomClient({ code }: { code: string }) {
                   </div>
                 ))}
               </div>
-              <div className="my-roster kawaii-card">
-                <div className="side-title"><Sparkles size={16}/> KADRON</div>
-                {me.team.length === 0 && <p className="empty-copy">Henüz kimseyi kapamadın.</p>}
-                {me.team.map((member, index) => (
-                  <div className="roster-line" key={member.characterId}><span>{index + 1}</span><div><strong>{member.name}</strong><small>{member.source}</small></div><b>{member.transferred ? "↔ TAKAS" : member.price ? `₺${member.price}` : "FREE"}</b></div>
-                ))}
-                {Array.from({ length: Math.max(0, room.slots - me.team.length) }).map((_, index) => <div className="roster-empty" key={index}>boş slot</div>)}
-              </div>
+              <TableView room={room}/>
             </aside>
           </div>
         </section>
@@ -501,57 +534,21 @@ export default function RoomClient({ code }: { code: string }) {
       {room.status === "leftovers" && (
         <section className="leftover-screen game-section">
           <div className="leftover-head">
-            <div><div className="section-kicker"><Sparkles size={16}/> BEDAVA DRAFT</div><h2>Satılmayanları kap.</h2><p>Para yok, teklif yok. Sıran gelince istediğini seç.</p></div>
+            <div><div className="section-kicker"><Sparkles size={16}/> BEDAVA DRAFT</div><h2>Satılmayanları kap.</h2><p>Para harcanmaz. Sıran gelince seç; dolu kadrolar sıradan çıkar.</p></div>
             {draftPlayer && <div className="turn-card"><PolyAvatar seed={draftPlayer.uid} size={52}/><div><small>ŞİMDİ SIRA</small><strong>{draftPlayer.nickname}</strong></div></div>}
           </div>
           <div className="leftover-grid">
             {unsoldCharacters.map((character) => (
-              <button className="leftover-card kawaii-card" key={character.id} disabled={room.draftTurnUid !== uid || me.team.length >= room.slots} onClick={() => draftCharacter(character.id)}>
-                <PolyCharacter name={character.name} small/>
-                <strong>{character.name}</strong><small>{character.source}</small><span>₺0 • BEDAVA</span>
-              </button>
+              <article className="leftover-profile-card kawaii-card" key={character.id}><CharacterCard character={character}/><button className="primary-button" disabled={isHost || room.draftTurnUid!==uid || !me || me.team.length>=room.slots} onClick={()=>draftCharacter(character.id)}>Ücretsiz seç · ₺0</button></article>
             ))}
           </div>
           {room.draftTurnUid !== uid && <div className="waiting-pill centered"><Hourglass size={16}/> {draftPlayer?.nickname || "Sıradaki oyuncu"} seçiyor</div>}
         </section>
       )}
 
-      {room.status === "results" && (
-        <section className="results-screen game-section">
-          <div className="results-heading">
-            <div className="section-kicker"><Trophy size={16}/> FİNAL</div>
-            <h2>{room.judge ? "AI kararını verdi." : "Kadrolar masada."}</h2>
-            <p><b>{room.scenario}</b> görevi için kim en iyi ekibi kurdu?</p>
-          </div>
+      {room.status === "results" && <ResultShow room={room} isModerator={isHost} busy={busy} now={now} onJudge={runJudge} onAdvance={step=>moderatorAction((r,a,at)=>advancePresentation(r,a,step,at))} onNext={()=>moderatorAction(nextSeriesRound)} onRematch={()=>moderatorAction(resetSeries)}/>}
 
-          <div className="result-grid">
-            {players.map((player) => {
-              const ranking = room.judge?.rankings.find((item) => item.playerUid === player.uid);
-              const winner = room.judge?.winnerUid === player.uid;
-              return (
-                <article className={`result-card kawaii-card ${winner ? "winner" : ""}`} key={player.uid}>
-                  {winner && <div className="winner-crown">👑 KAZANAN</div>}
-                  <div className="result-player"><PolyAvatar seed={player.uid} size={64}/><div><small>OYUNCU</small><h3>{player.nickname}</h3></div>{ranking && <div className="score-bubble">{ranking.score}</div>}</div>
-                  <div className="result-roster">
-                    {player.team.map((member, index) => <div key={member.characterId}><span>{String(index + 1).padStart(2, "0")}</span><strong>{member.name}</strong><small>{member.transferred ? "TAKAS" : member.acquisition === "leftover" ? "FREE" : `₺${member.price}`}</small></div>)}
-                  </div>
-                  {ranking ? <p className="judge-comment">“{ranking.comment}”</p> : <p className="judge-comment muted">Jüri henüz konuşmadı.</p>}
-                </article>
-              );
-            })}
-          </div>
-
-          <ChaosHistory events={chaosHistory}/>
-          {room.judge?.summary && <div className="judge-summary"><Bot size={20}/><span>{room.judge.summary}</span></div>}
-          <div className="results-actions">
-            {isHost && !room.judge && <button className="primary-button jumbo" disabled={busy} onClick={runJudge}><Sparkles size={20}/> AI jüriyi çalıştır</button>}
-            {!isHost && !room.judge && <div className="waiting-pill"><Hourglass size={16}/> Host AI jüriyi çağıracak</div>}
-            {isHost && room.judge && <button className="primary-button jumbo" disabled={busy} onClick={generateRound}><RotateCcw size={19}/> Yeni tur</button>}
-          </div>
-        </section>
-      )}
-
-      {toast && <button className="toast" onClick={() => setToast("")}>{toast}</button>}
+      {toast && <button role="status" className="toast" onClick={() => setToast("")}>{toast}</button>}
     </main>
   );
 }

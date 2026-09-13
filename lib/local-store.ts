@@ -1,6 +1,6 @@
 "use client";
 
-import { createInitialRoom, joinPlayer, normalizeRoomState } from "./game-engine";
+import { createModeratedRoom, joinPlayer, normalizeRoomState } from "./game-engine";
 import type { RoomState } from "./types";
 
 const ROOM_PREFIX = "kadro:room:";
@@ -32,6 +32,8 @@ export class LocalGameStore {
       });
     }
   }
+
+  now() { return Date.now(); }
 
   async identity() {
     let uid = sessionStorage.getItem(UID_KEY);
@@ -72,7 +74,7 @@ export class LocalGameStore {
     for (let attempt = 0; attempt < 20; attempt++) {
       const code = makeRoomCode();
       if (this.read(code)) continue;
-      const room = createInitialRoom({ code, hostUid: uid, nickname, budget, slots });
+      const room = createModeratedRoom({ code, hostUid: uid, nickname, budget, slots });
       this.write(code, room);
       return { room, uid };
     }

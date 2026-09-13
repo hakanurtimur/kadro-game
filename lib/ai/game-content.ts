@@ -44,6 +44,11 @@ function poolPrompt(categories: string[], count: number): string {
 export async function generateRoundContent(raw: unknown, generate?: GenerateJson): Promise<RoundPayload> {
   const body = record(raw);
   const count = requiredCharacterCount(body);
+  if (body.excludedScenarios !== undefined && (!Array.isArray(body.excludedScenarios) || body.excludedScenarios.length > 3 || body.excludedScenarios.some(v => typeof v !== "string" || v.length > 90))) {
+    throw new ContentInputError("Seri görev geçmişi geçersiz.");
+  }
+  const excluded = (Array.isArray(body.excludedScenarios) ? body.excludedScenarios : []) as string[];
+  const excludedKeys = new Set(excluded.map(normalizeCatalogKey));
   const categories = eligibleCategories(count);
   if (!categories.length) throw new CharacterPoolError("Bu masa için yeterli karakterli evren yok.");
   if (generate) {
@@ -51,11 +56,11 @@ export async function generateRoundContent(raw: unknown, generate?: GenerateJson
       const ai = record(await generate({
         system,
         temperature: 0.8,
-        prompt: `${poolPrompt(categories, count)} Ayrıca scenario alanında bu kadroların yarışabileceği kısa, komik, net bir görev üret.`,
+        prompt: `${poolPrompt(categories, count)} Ayrıca scenario alanında bu kadroların yarışabileceği kısa, komik, net bir görev üret. Bu tamamlanan tur görevlerini tekrar etme: ${JSON.stringify(excluded)}.`,
       }));
       const scenario = text(ai.scenario, 90);
       const category = canonicalCategory(text(ai.characterCategory));
-      if (!scenario || !category || !categories.includes(category)) throw new Error("Uygunsuz AI evreni.");
+      if (!scenario || excludedKeys.has(normalizeCatalogKey(scenario)) || !category || !categories.includes(category)) throw new Error("Uygunsuz AI evreni.");
       return {
         scenario, characterCategory: category,
         characters: selectCatalogCharacters(category, count, ai.characters), source: "groq",
@@ -64,7 +69,9 @@ export async function generateRoundContent(raw: unknown, generate?: GenerateJson
       // Whole-pool fallback: category and characters always come from the same catalog.
     }
   }
-  return generateFallbackRound(count);
+  const fallback = generateFallbackRound(count);
+  if (excludedKeys.has(normalizeCatalogKey(fallback.scenario))) fallback.scenario = rerollFallbackScenario(excluded);
+  return fallback;
 }
 
 export async function rerollContent(raw: unknown, generate?: GenerateJson) {

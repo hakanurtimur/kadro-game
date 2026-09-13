@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./party-upgrade.css";
 
 export const metadata: Metadata = {
   title: "KADRO! — AI Auction Party Game",
