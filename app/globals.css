@@ -748,3 +748,15 @@ html, body { max-width: 100%; overflow-x: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .ludo-preview-route, .ludo-preview-route.target { animation:none!important; }
 }
+
+/* Patch 06 — synthesized Ludo sound controls */
+.ludo-topbar-actions { justify-self:end; display:flex; align-items:center; gap:8px; }
+.ludo-sound-toggle { min-height:40px; display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:9px 12px; border:1px solid #ded7e3; border-radius:999px; background:#ffffffd9; backdrop-filter:blur(12px); color:#665d6e; font:inherit; font-size:10px; font-weight:850; cursor:pointer; touch-action:manipulation; box-shadow:0 5px 16px rgba(74,57,91,.08); }
+.ludo-sound-toggle[aria-pressed="true"] { color:#5c52aa; background:#f2efff; border-color:#cfc8ef; }
+.ludo-sound-toggle:focus-visible { outline:3px solid #716cd9; outline-offset:3px; }
+@media (max-width:780px) {
+  .ludo-topbar-actions { gap:5px; }
+  .ludo-topbar-actions .ludo-guide-button { display:none; }
+  .ludo-sound-toggle { width:44px; height:44px; min-height:44px; padding:0; }
+  .ludo-sound-toggle span { display:none; }
+}

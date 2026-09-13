@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Copy, Crown, Dices, RotateCcw, Shield, Sparkles, Users, Zap } from "lucide-react";
+import { ArrowLeft, Copy, Crown, Dices, RotateCcw, Shield, Sparkles, Users, Volume2, VolumeX, Zap } from "lucide-react";
 import LudoBoard from "./LudoBoard";
 import LudoGuide from "./LudoGuide";
 import { chooseLudoDie, finishNoMove, legalPawnMoves, moveLudoPawn, previewLudoPawnMove, rollLudoDice, setLudoMode, startLudoGame } from "@/lib/ludo/engine";
 import { getLudoStore } from "@/lib/ludo/store";
+import { getLudoSoundEnabled, playLudoSfx, setLudoSoundEnabled } from "@/lib/ludo/sound";
 import type { LudoMode, LudoRoomState } from "@/lib/ludo/types";
 
 const DICE = ["⚀","⚁","⚂","⚃","⚄","⚅"];
@@ -20,6 +21,7 @@ export default function LudoClient({ code }: { code:string }) {
   const [rolling,setRolling]=useState(false);
   const [actionBusy,setActionBusy]=useState(false);
   const [selectedPawn,setSelectedPawn]=useState<number|null>(null);
+  const [soundEnabled,setSoundEnabledState]=useState(true);
 
   useEffect(()=>{
     let active=true; let unsub:(()=>void)|undefined;
@@ -33,6 +35,7 @@ export default function LudoClient({ code }: { code:string }) {
   },[code,store]);
 
   useEffect(()=>{ setSelectedPawn(null); },[room?.turnUid,room?.turnNumber,room?.phase,room?.selectedDie]);
+  useEffect(()=>{ setSoundEnabledState(getLudoSoundEnabled()); },[]);
 
   if(!room||!uid) return <main className="loading-screen"><div className="ludo-loading"><Dices size={56}/><span>{toast||"Tahta kuruluyor…"}</span></div></main>;
   const actorUid = uid;
@@ -56,10 +59,24 @@ export default function LudoClient({ code }: { code:string }) {
     setActionBusy(true);
     try{return await work();}finally{setActionBusy(false);}
   }
-  async function changeMode(mode:LudoMode){await runAction(async()=>{try{await mutate((state)=>setLudoMode(state,actorUid,mode));}catch{}});}
-  async function start(){await runAction(async()=>{try{await mutate((state)=>startLudoGame(state,actorUid));}catch{}});}
+  function toggleSound(){
+    const next=!soundEnabled;
+    setLudoSoundEnabled(next);
+    setSoundEnabledState(next);
+    if(next) playLudoSfx("confirm");
+  }
+  function playMoveOutcome(next:LudoRoomState,steps:number){
+    const delay=Math.min(8,Math.max(1,steps))*0.055+0.04;
+    if(next.status==='finished'&&next.winnerUid===actorUid) playLudoSfx("win",{delay});
+    else if(next.lastAction?.type==='capture') playLudoSfx("capture",{delay});
+    else if(next.lastAction?.type==='home') playLudoSfx("home",{delay});
+    if(next.lastAction?.type==='chaos') playLudoSfx("chaos",{delay:delay+0.08});
+  }
+  async function changeMode(mode:LudoMode){playLudoSfx("select");await runAction(async()=>{try{await mutate((state)=>setLudoMode(state,actorUid,mode));}catch{}});}
+  async function start(){playLudoSfx("confirm");await runAction(async()=>{try{await mutate((state)=>startLudoGame(state,actorUid));}catch{}});}
   async function roll(){
     if(actionBusy||rolling||!myTurn||!room||room.phase!=='awaiting-roll')return;
+    playLudoSfx("roll");
     setActionBusy(true); setRolling(true); setToast("Zar dönüyor…");
     await new Promise((resolve)=>setTimeout(resolve,520));
     try {
@@ -69,26 +86,33 @@ export default function LudoClient({ code }: { code:string }) {
       else setToast("");
     } catch{} finally{setRolling(false);setActionBusy(false);}
   }
-  async function chooseDie(value:number){await runAction(async()=>{try{await mutate((state)=>chooseLudoDie(state,actorUid,value));}catch{}});}
+  async function chooseDie(value:number){playLudoSfx("select");await runAction(async()=>{try{await mutate((state)=>chooseLudoDie(state,actorUid,value));}catch{}});}
   function selectPawn(index:number){
     if(actionBusy||previewLudoPawnMove(currentRoom,actorUid,index)===null)return;
+    playLudoSfx("select");
     setSelectedPawn(index);
     setToast("Gideceğin rota renklendi. Parlayan hedef kareye dokunup hamleyi onayla.");
   }
   async function confirmMove(){
     if(selectedPawn===null)return;
     const index=selectedPawn;
+    const pawn=currentRoom.players[actorUid]?.pawns[index];
+    const steps=previewProgress===null||!pawn?1:pawn.progress<0?1:Math.max(1,previewProgress-pawn.progress);
     setSelectedPawn(null);
-    await runAction(async()=>{try{await mutate((state)=>moveLudoPawn(state,actorUid,index));setToast("");}catch{}});
+    playLudoSfx("confirm");
+    await runAction(async()=>{try{const next=await mutate((state)=>moveLudoPawn(state,actorUid,index));playLudoSfx("move",{steps});playMoveOutcome(next,steps);setToast("");}catch{}});
   }
-  async function pass(){await runAction(async()=>{try{await mutate((state)=>finishNoMove(state,actorUid));setToast("");}catch{}});}
+  async function pass(){await runAction(async()=>{try{const next=await mutate((state)=>finishNoMove(state,actorUid));if(next.lastAction?.type==='chaos')playLudoSfx("chaos");setToast("");}catch{}});}
 
   return <main className={`ludo-room-shell ludo-theme-${room.mode}`} aria-busy={actionBusy||rolling}>
     <div className="soft-grid"/>
     <header className="ludo-topbar">
       <button className="ludo-back" onClick={()=>router.push('/ludo')}><ArrowLeft size={16}/> Kızma Birader</button>
       <button className="room-code" onClick={()=>navigator.clipboard.writeText(code)}>{code}<Copy size={14}/></button>
-      <LudoGuide/>
+      <div className="ludo-topbar-actions">
+        <button className="ludo-sound-toggle" type="button" aria-pressed={soundEnabled} aria-label={soundEnabled?'Oyun seslerini kapat':'Oyun seslerini aç'} title={soundEnabled?'Sesleri kapat':'Sesleri aç'} onClick={toggleSound}>{soundEnabled?<Volume2 size={17}/>:<VolumeX size={17}/>}<span>{soundEnabled?'Ses açık':'Sessiz'}</span></button>
+        <LudoGuide/>
+      </div>
     </header>
 
     {room.status==='lobby' && <section className="ludo-lobby-wrap">
