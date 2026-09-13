@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Copy, Crown, Dices, RotateCcw, Shield, Sparkles, Users, Zap } from "lucide-react";
 import LudoBoard from "./LudoBoard";
 import LudoGuide from "./LudoGuide";
-import { chooseLudoDie, finishNoMove, legalPawnMoves, moveLudoPawn, rollLudoDice, setLudoMode, startLudoGame } from "@/lib/ludo/engine";
+import { chooseLudoDie, finishNoMove, legalPawnMoves, moveLudoPawn, previewLudoPawnMove, rollLudoDice, setLudoMode, startLudoGame } from "@/lib/ludo/engine";
 import { getLudoStore } from "@/lib/ludo/store";
 import type { LudoMode, LudoRoomState } from "@/lib/ludo/types";
 
@@ -19,6 +19,7 @@ export default function LudoClient({ code }: { code:string }) {
   const [toast,setToast]=useState("");
   const [rolling,setRolling]=useState(false);
   const [actionBusy,setActionBusy]=useState(false);
+  const [selectedPawn,setSelectedPawn]=useState<number|null>(null);
 
   useEffect(()=>{
     let active=true; let unsub:(()=>void)|undefined;
@@ -31,8 +32,11 @@ export default function LudoClient({ code }: { code:string }) {
     return()=>{active=false;unsub?.();};
   },[code,store]);
 
+  useEffect(()=>{ setSelectedPawn(null); },[room?.turnUid,room?.turnNumber,room?.phase,room?.selectedDie]);
+
   if(!room||!uid) return <main className="loading-screen"><div className="ludo-loading"><Dices size={56}/><span>{toast||"Tahta kuruluyor…"}</span></div></main>;
   const actorUid = uid;
+  const currentRoom = room;
   const me=room.players[actorUid];
   if(!me) return <main className="loading-screen"><section className="empty-card kawaii-card"><h2>Bu sekme odada değil.</h2><button className="primary-button" onClick={()=>router.push('/ludo')}>Kızma Birader ana sayfası</button></section></main>;
 
@@ -42,6 +46,7 @@ export default function LudoClient({ code }: { code:string }) {
   const myTurn=room.turnUid===uid&&room.status==='playing';
   const legal=myTurn?legalPawnMoves(room,uid):[];
   const winner=room.winnerUid?room.players[room.winnerUid]:null;
+  const previewProgress=selectedPawn===null?null:previewLudoPawnMove(currentRoom,actorUid,selectedPawn);
 
   async function mutate(fn:(state:LudoRoomState)=>LudoRoomState){
     try{return await store.mutate(code,fn);}catch(error){setToast(error instanceof Error?error.message:"İşlem yapılamadı.");throw error;}
@@ -65,7 +70,17 @@ export default function LudoClient({ code }: { code:string }) {
     } catch{} finally{setRolling(false);setActionBusy(false);}
   }
   async function chooseDie(value:number){await runAction(async()=>{try{await mutate((state)=>chooseLudoDie(state,actorUid,value));}catch{}});}
-  async function move(index:number){await runAction(async()=>{try{await mutate((state)=>moveLudoPawn(state,actorUid,index));}catch{}});}
+  function selectPawn(index:number){
+    if(actionBusy||previewLudoPawnMove(currentRoom,actorUid,index)===null)return;
+    setSelectedPawn(index);
+    setToast("Hedef kareyi kontrol et; uygunsa ✓ işaretine dokun.");
+  }
+  async function confirmMove(){
+    if(selectedPawn===null)return;
+    const index=selectedPawn;
+    setSelectedPawn(null);
+    await runAction(async()=>{try{await mutate((state)=>moveLudoPawn(state,actorUid,index));setToast("");}catch{}});
+  }
   async function pass(){await runAction(async()=>{try{await mutate((state)=>finishNoMove(state,actorUid));setToast("");}catch{}});}
 
   return <main className={`ludo-room-shell ludo-theme-${room.mode}`} aria-busy={actionBusy||rolling}>
@@ -109,7 +124,7 @@ export default function LudoClient({ code }: { code:string }) {
       </aside>
 
       <div className="ludo-board-stage">
-        <LudoBoard room={room} uid={uid} legalMoves={legal} onPawnClick={move}/>
+        <LudoBoard room={room} uid={uid} legalMoves={legal} selectedPawnIndex={selectedPawn} previewProgress={previewProgress} onPawnClick={selectPawn} onConfirmMove={confirmMove}/>
         {room.lastAction&&<div className={`ludo-action-toast action-${room.lastAction.type}`}>{room.lastAction.message}</div>}
       </div>
 
@@ -119,7 +134,7 @@ export default function LudoClient({ code }: { code:string }) {
           <div className={`big-die ${rolling?'rolling':''}`}>{room.dice.length?room.dice.map((die,index)=><span key={`${die}-${index}`}>{DICE[die-1]}</span>):<span>⚄</span>}</div>
           {myTurn&&room.phase==='awaiting-roll'&&<button className="ludo-roll-button" disabled={rolling||actionBusy} onClick={roll}><Dices size={20}/>{rolling?'Dönüyor…':'Zarı at'}</button>}
           {myTurn&&room.phase==='choose-die'&&<div className="choose-dice"><p>Hangisini kullanacaksın?</p>{room.dice.map((die,index)=><button key={`${die}-${index}`} disabled={actionBusy} onClick={()=>chooseDie(die)}>{DICE[die-1]} <b>{die}</b></button>)}</div>}
-          {myTurn&&room.phase==='awaiting-move'&&legal.length>0&&<p className="move-hint">✨ Parlayan taşlardan birini seç.</p>}
+          {myTurn&&room.phase==='awaiting-move'&&legal.length>0&&<p className="move-hint">{selectedPawn===null?"✨ Parlayan taşlardan birini seç.":"✓ Gideceği kareyi gösterdim. Hedefe dokunup onayla."}</p>}
           {myTurn&&room.phase==='awaiting-move'&&!legal.length&&<button className="secondary-button" disabled={actionBusy} onClick={pass}><RotateCcw size={16}/> Hamle yok · turu geç</button>}
           {!myTurn&&room.status==='playing'&&<p className="waiting-copy">{turnPlayer?.nickname} zar atıyor…</p>}
         </div>

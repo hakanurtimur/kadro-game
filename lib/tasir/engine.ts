@@ -36,8 +36,25 @@ function owns(seat: number, tile: TasirTile) {
   const [min, max] = OWN_RANGES[seat] ?? OWN_RANGES[0];
   return tile >= min && tile <= max;
 }
+function ownerSeat(tile: TasirTile): 0 | 1 | null {
+  if (tile === "joker") return null;
+  return tile <= 4 ? 0 : 1;
+}
+function targetColumn(seat: number, tile: TasirTile) {
+  if (tile === "joker") return null;
+  const [min, max] = OWN_RANGES[seat] ?? OWN_RANGES[0];
+  if (tile < min || tile > max) return null;
+  return tile - min;
+}
+function columnSolved(player: TasirPlayer, column: number) {
+  const target = (OWN_RANGES[player.seat] ?? OWN_RANGES[0])[0] + column;
+  return player.board.length === BOARD_ROWS && player.board.every((row) => {
+    const tile = row[column];
+    return row.length === BOARD_COLS && !!tile && tile.revealed && tile.value === target;
+  });
+}
 function boardSolved(player: TasirPlayer) {
-  return player.board.length === BOARD_ROWS && player.board.every((row) => row.length === BOARD_COLS && row.every((tile) => tile.revealed));
+  return Array.from({ length: BOARD_COLS }, (_, column) => columnSolved(player, column)).every(Boolean);
 }
 function cloneBoard(board: TasirBoardTile[][]) { return board.map((row) => row.map((tile) => ({ ...tile }))); }
 function playerList(room: TasirRoomState) { return Object.values(room.players).sort((a, b) => a.seat - b.seat); }
@@ -102,8 +119,9 @@ function shiftColumn(board: TasirBoardTile[][], column: number, incoming: TasirT
 export function tasirLegalColumns(room: TasirRoomState, uid: string) {
   const player = room.players[uid];
   if (!player || room.status !== "playing" || room.turnUid !== uid) return [];
-  if (room.forcedColumn !== null) return [room.forcedColumn];
-  return [0, 1, 2, 3, 4];
+  if (room.heldTile === "joker") return [0, 1, 2, 3, 4];
+  const column = targetColumn(player.seat, room.heldTile);
+  return column === null ? [] : [column];
 }
 
 export function playTasirColumn(room: TasirRoomState, uid: string, column: number): TasirRoomState {
@@ -112,10 +130,11 @@ export function playTasirColumn(room: TasirRoomState, uid: string, column: numbe
   if (!Number.isInteger(column) || column < 0 || column >= BOARD_COLS) throw new Error("Geçersiz sütun.");
   const current = room.players[uid];
   if (!current) throw new Error("Oyuncu bulunamadı.");
-  const opponent = playerList(room).find((player) => player.uid !== uid);
-  if (!opponent) throw new Error("Rakip bulunamadı.");
   const legal = tasirLegalColumns(room, uid);
-  if (!legal.includes(column)) throw new Error(`${room.forcedColumn! + 1}. sütundan devam etmelisin.`);
+  if (!legal.includes(column)) {
+    const expected = room.heldTile === "joker" ? "Joker ile istediğin hattı seçebilirsin." : `${room.heldTile} taşı yalnız ${room.heldTile} hattına girebilir.`;
+    throw new Error(expected);
+  }
 
   const incoming = room.heldTile;
   const shifted = shiftColumn(current.board, column, incoming);
@@ -123,34 +142,28 @@ export function playTasirColumn(room: TasirRoomState, uid: string, column: numbe
   const updatedCurrent: TasirPlayer = { ...current, board: shifted.board };
   const players = { ...room.players, [uid]: updatedCurrent };
   const won = boardSolved(updatedCurrent);
-  const passTurn = !won && overflow !== "joker" && !owns(current.seat, overflow);
-  let forcedColumn: number | null = null;
-  let columnChainCount = 0;
-  let releasedColumn = false;
 
-  if (!won && !passTurn && overflow !== "joker") {
-    const nextCount = room.forcedColumn === column ? room.columnChainCount + 1 : 1;
-    if (nextCount < BOARD_ROWS) {
-      forcedColumn = column;
-      columnChainCount = nextCount;
-    } else {
-      releasedColumn = true;
-    }
+  let nextTurnUid: string | null = uid;
+  let forcedColumn: number | null = null;
+  let message: string;
+
+  if (won) {
+    message = `${current.nickname} beş hattını da doğru taşlarla tamamladı!`;
+  } else if (overflow === "joker") {
+    message = "Joker geri çıktı! İstediğin hattı seçebilirsin.";
+  } else {
+    const seat = ownerSeat(overflow);
+    const owner = playerList(room).find((player) => player.seat === seat);
+    if (!owner || seat === null) throw new Error("Açılan taşın sahibi bulunamadı.");
+    const nextColumn = targetColumn(owner.seat, overflow);
+    if (nextColumn === null) throw new Error("Açılan taş hedef hattına yönlendirilemedi.");
+    nextTurnUid = owner.uid;
+    forcedColumn = nextColumn;
+    message = `${overflow} açıldı → ${owner.nickname} ${overflow} hattını kaydıracak.`;
   }
 
-  const nextTurnUid = won ? uid : passTurn ? opponent.uid : uid;
-  const message = won
-    ? `${current.nickname} 4×5 tahtadaki bütün taşlarını açtı!`
-    : overflow === "joker"
-      ? "Joker geri çıktı! İstediğin sütunu seçebilirsin."
-      : passTurn
-        ? `${overflow} karşı tarafın taşı. El ${opponent.nickname}'e geçti.`
-        : releasedColumn
-          ? `${overflow} senin taşın. Bu sütunda tam tur tamamlandı; başka bir sütun seçebilirsin.`
-          : `${overflow} senin taşın. ${column + 1}. sütundan devam et.`;
-
   return {
-    ...room, players, heldTile: overflow, turnUid: nextTurnUid, forcedColumn, columnChainCount, moveNumber: room.moveNumber + 1,
+    ...room, players, heldTile: overflow, turnUid: won ? uid : nextTurnUid, forcedColumn, columnChainCount: 0, moveNumber: room.moveNumber + 1,
     status: won ? "finished" : room.status, winnerUid: won ? uid : null,
     lastAction: { playerUid: uid, column, incoming, overflow, overflowWasRevealed: shifted.overflow.revealed, chain: 1, message, at: now() }, updatedAt: now(),
   };
@@ -188,7 +201,11 @@ export function normalizeTasirState(raw: any): TasirRoomState {
     status: ["lobby", "rps", "playing", "finished"].includes(raw?.status) ? raw.status : "lobby",
     createdAt: Number(raw?.createdAt || 0), updatedAt: Number(raw?.updatedAt || 0), players,
     randomSeed: Number(raw?.randomSeed || 1), turnUid: raw?.turnUid ? String(raw.turnUid) : null,
-    heldTile: normalizeValue(raw?.heldTile ?? "joker"), forcedColumn: Number.isInteger(raw?.forcedColumn) ? Number(raw.forcedColumn) : null, columnChainCount: Math.max(0, Number(raw?.columnChainCount || 0)), moveNumber: Number(raw?.moveNumber || 0),
+    heldTile: normalizeValue(raw?.heldTile ?? "joker"), forcedColumn: (() => {
+      const held = normalizeValue(raw?.heldTile ?? "joker");
+      const turn = raw?.turnUid ? players[String(raw.turnUid)] : undefined;
+      return held === "joker" || !turn ? null : targetColumn(turn.seat, held);
+    })(), columnChainCount: 0, moveNumber: Number(raw?.moveNumber || 0),
     rps: { round: Math.max(1, Number(raw?.rps?.round || 1)), choices, winnerUid: raw?.rps?.winnerUid ? String(raw.rps.winnerUid) : null },
     winnerUid: raw?.winnerUid ? String(raw.winnerUid) : null,
     lastAction: action,
@@ -196,5 +213,13 @@ export function normalizeTasirState(raw: any): TasirRoomState {
 }
 
 export function tasirOwnedRange(seat: number) { return OWN_RANGES[seat] ?? OWN_RANGES[0]; }
+export function tasirTargetForColumn(seat: number, column: number) {
+  const [min] = OWN_RANGES[seat] ?? OWN_RANGES[0];
+  return min + column;
+}
+export function tasirOwnerSeat(tile: TasirTile) { return ownerSeat(tile); }
+export function tasirCompletedColumns(player: TasirPlayer) {
+  return Array.from({ length: BOARD_COLS }, (_, column) => columnSolved(player, column)).filter(Boolean).length;
+}
 export function tasirBoardSolved(player: TasirPlayer) { return boardSolved(player); }
 export function tasirRevealCount(player: TasirPlayer) { return player.board.flat().filter((tile) => tile.revealed).length; }

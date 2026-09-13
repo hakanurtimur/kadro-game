@@ -6,6 +6,10 @@ const engine = await importTs("lib/tasir/engine.ts");
 const hidden = (value) => ({ value, revealed: false });
 const open = (value) => ({ value, revealed: true });
 const boardOf = (value=0, revealed=false) => Array.from({length:4},()=>Array.from({length:5},()=>({value,revealed})));
+const solvedBoard = (seat) => {
+  const min = seat === 1 ? 5 : 0;
+  return Array.from({length:4},()=>Array.from({length:5},(_,column)=>open(min+column)));
+};
 
 function startedRoom(code="TSR22") {
   let room=engine.createTasirRoom({code,hostUid:"a",nickname:"A"});
@@ -28,7 +32,7 @@ test("TAŞIR is exactly two-player, deals four copies of 0-9 and starts every bo
   for(let n=0;n<10;n++)assert.equal(digits.filter((x)=>x===n).length,4);
 });
 
-test("RPS tie repeats and winner starts with visible Joker",()=>{
+test("RPS winner starts with Joker and may choose any one of their five target columns",()=>{
   let room=engine.createTasirRoom({code:"TSR23",hostUid:"a",nickname:"A"});
   room=engine.joinTasirPlayer(room,{uid:"b",nickname:"B"});room=engine.startTasirRps(room,"a");
   room=engine.chooseTasirRps(room,"a","rock");room=engine.chooseTasirRps(room,"b","rock");
@@ -38,54 +42,69 @@ test("RPS tie repeats and winner starts with visible Joker",()=>{
   assert.deepEqual(engine.tasirLegalColumns(room,"a"),[0,1,2,3,4]);
 });
 
-test("a shift pushes the column down, inserts the held tile face-up and reveals the overflow",()=>{
+test("an opened number routes to the owner and its matching numbered column",()=>{
   let room=startedRoom("TSR24");
   const board=boardOf(0,false);board[3][1]=hidden(7);
   room={...room,players:{...room.players,a:{...room.players.a,board}},turnUid:"a",heldTile:"joker"};
   const next=engine.playTasirColumn(room,"a",1);
   assert.deepEqual(next.players.a.board[0][1],{value:"joker",revealed:true});
   assert.equal(next.heldTile,7);
-  assert.equal(next.lastAction.overflowWasRevealed,false);
   assert.equal(next.turnUid,"b");
+  assert.deepEqual(engine.tasirLegalColumns(next,"b"),[2],"7 belongs to player B and must enter B's 7 column");
+  assert.match(next.lastAction.message,/7/);
 });
 
-test("own number stays with the player and continues through the same column",()=>{
+test("same-owner overflow still changes to the row belonging to that exact value",()=>{
   let room=startedRoom("TSR25");
-  const board=boardOf(8,false);board[3][2]=hidden(3);
-  room={...room,players:{...room.players,a:{...room.players.a,board}},turnUid:"a",heldTile:2,forcedColumn:2,columnChainCount:1};
-  assert.deepEqual(engine.tasirLegalColumns(room,"a"),[2]);
-  assert.throws(()=>engine.playTasirColumn(room,"a",1),/3\. sütundan/);
-  const next=engine.playTasirColumn(room,"a",2);
-  assert.equal(next.heldTile,3);assert.equal(next.turnUid,"a");
-  assert.deepEqual(engine.tasirLegalColumns(next,"a"),[2]);
-  assert.deepEqual(next.players.a.board[0][2],{value:2,revealed:true});
+  const board=boardOf(8,false);board[3][4]=hidden(1);
+  room={...room,players:{...room.players,a:{...room.players.a,board}},turnUid:"a",heldTile:4,forcedColumn:4};
+  assert.deepEqual(engine.tasirLegalColumns(room,"a"),[4]);
+  const next=engine.playTasirColumn(room,"a",4);
+  assert.equal(next.heldTile,1);assert.equal(next.turnUid,"a");
+  assert.deepEqual(engine.tasirLegalColumns(next,"a"),[1],"1 must route to the 1 column, not continue the previous column");
 });
 
-test("opponent number passes the visible tile and gives the opponent a fresh column choice",()=>{
+test("a held number can only be inserted into the column labelled with that number",()=>{
   let room=startedRoom("TSR26");
-  const board=boardOf(0,false);board[3][0]=hidden(7);
-  room={...room,players:{...room.players,a:{...room.players.a,board}},turnUid:"a",heldTile:0};
-  const next=engine.playTasirColumn(room,"a",0);
-  assert.equal(next.heldTile,7);assert.equal(next.turnUid,"b");
-  assert.deepEqual(engine.tasirLegalColumns(next,"b"),[0,1,2,3,4]);
+  room={...room,turnUid:"b",heldTile:5,forcedColumn:0};
+  assert.deepEqual(engine.tasirLegalColumns(room,"b"),[0]);
+  assert.throws(()=>engine.playTasirColumn(room,"b",1),/5|sütun|hat/i);
 });
 
-test("player wins as soon as all 4x5 board tiles are face-up, regardless of their numbers",()=>{
+test("a player wins only when all five owned columns are fully revealed and filled with their matching value",()=>{
   let room=startedRoom("TSR27");
-  const board=boardOf(9,true);board[3][0]=hidden(6);
-  room={...room,players:{...room.players,a:{...room.players.a,board}},turnUid:"a",heldTile:"joker"};
-  const next=engine.playTasirColumn(room,"a",0);
-  assert.equal(engine.tasirRevealCount(next.players.a),20);
+  const almost=solvedBoard(0);
+  almost[3][4]=hidden(9);
+  room={...room,players:{...room.players,a:{...room.players.a,board:almost}},turnUid:"a",heldTile:4,forcedColumn:4};
+  const next=engine.playTasirColumn(room,"a",4);
   assert.equal(next.status,"finished");assert.equal(next.winnerUid,"a");
+  assert.equal(engine.tasirCompletedColumns(next.players.a),5);
+
+  const wrong=solvedBoard(0);wrong[0][2]=open(3);
+  assert.equal(engine.tasirBoardSolved({...next.players.a,board:wrong}),false,"a revealed but wrong symbol does not solve the board");
+});
+
+test("a hidden matching tile does not count until it has actually been revealed",()=>{
+  const board=solvedBoard(1);board[2][0]=hidden(5);
+  const player={uid:"b",nickname:"B",seat:1,board};
+  assert.equal(engine.tasirCompletedColumns(player),4);
+  assert.equal(engine.tasirBoardSolved(player),false);
 });
 
 test("already opened tiles stay opened after later shifts",()=>{
   let room=startedRoom("TSR28");
-  const board=boardOf(1,true);board[3][4]=hidden(7);
-  room={...room,players:{...room.players,a:{...room.players.a,board}},turnUid:"a",heldTile:"joker"};
+  const board=solvedBoard(0);board[3][4]=hidden(7);
+  room={...room,players:{...room.players,a:{...room.players.a,board}},turnUid:"a",heldTile:4,forcedColumn:4};
   const next=engine.playTasirColumn(room,"a",4);
   assert.ok(next.players.a.board.slice(1).flat().filter((_,i)=>i%5!==4).every((tile)=>tile.revealed));
   assert.equal(next.players.a.board[0][4].revealed,true);
+});
+
+test("target labels map 0-4 to seat zero and 5-9 to seat one",()=>{
+  assert.deepEqual(Array.from({length:5},(_,c)=>engine.tasirTargetForColumn(0,c)),[0,1,2,3,4]);
+  assert.deepEqual(Array.from({length:5},(_,c)=>engine.tasirTargetForColumn(1,c)),[5,6,7,8,9]);
+  assert.equal(engine.tasirOwnerSeat(0),0);assert.equal(engine.tasirOwnerSeat(4),0);
+  assert.equal(engine.tasirOwnerSeat(5),1);assert.equal(engine.tasirOwnerSeat(9),1);
 });
 
 test("old numeric Patch 04 boards normalize as closed tiles",()=>{

@@ -44,7 +44,7 @@ export default function GamesHome() {
           <div className="game-choice-copy">
             <small>2 KİŞİLİK KAYDIRMA OYUNU</small>
             <h2>TAŞIR Oyna</h2>
-            <p>4×5 kapalı taşları kaydır. Taşan sayı seninse devam et; rakibinse eli karşıya ver.</p>
+            <p>4×5 kapalı taşları aç. Çıkan sembol hangi hatta aitse o hat kayar; beş hattı da 4/4 tamamla.</p>
             <div className="choice-pills"><span><Users size={14}/> tam 2 kişi</span><span>★ Joker + TKM</span></div>
           </div>
           <span className="choice-go">Gir <ArrowRight size={18}/></span>

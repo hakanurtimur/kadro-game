@@ -130,3 +130,40 @@ test('shield prevents capture and peace disables captures globally', () => {
   state=engine.moveLudoPawn(state,'p1',0,12);
   assert.equal(state.players.p2.pawns[0].progress,45);
 });
+
+test('a pawn cannot land on a slot occupied by its own team, including the home lane', () => {
+  let state = room();
+  state = engine.startLudoGame(state,'p1',10);
+  state.players.p1.pawns[0].progress = 5;
+  state.players.p1.pawns[1].progress = 6;
+  state.turnUid='p1'; state.phase='awaiting-move'; state.dice=[1]; state.selectedDie=1;
+
+  assert.ok(!engine.legalPawnMoves(state,'p1').includes(0));
+  assert.throws(()=>engine.moveLudoPawn(state,'p1',0,20), /dolu|kendi taş/i);
+
+  state.players.p1.pawns[0].progress = 52;
+  state.players.p1.pawns[1].progress = 53;
+  state.turnUid='p1'; state.phase='awaiting-move'; state.dice=[1]; state.selectedDie=1;
+  assert.ok(!engine.legalPawnMoves(state,'p1').includes(0));
+
+  state.players.p1.pawns[0].progress = 56;
+  state.players.p1.pawns[1].progress = 57;
+  state.turnUid='p1'; state.phase='awaiting-move'; state.dice=[1]; state.selectedDie=1;
+  assert.ok(engine.legalPawnMoves(state,'p1').includes(0), 'finished center may hold multiple finished pawns');
+});
+
+test('move preview exposes the exact legal destination without mutating the room', () => {
+  assert.equal(typeof engine.previewLudoPawnMove, 'function');
+  let state = room();
+  state = engine.startLudoGame(state,'p1',10);
+  state.players.p1.pawns[0].progress = 5;
+  state.players.p2.pawns[0].progress = 45; // p1 target 6 shares this global cell
+  state.turnUid='p1'; state.phase='awaiting-move'; state.dice=[1]; state.selectedDie=1;
+  const before = structuredClone(state);
+
+  assert.equal(engine.previewLudoPawnMove(state,'p1',0), 6);
+  assert.deepEqual(state, before);
+
+  state.players.p1.pawns[1].progress = 6;
+  assert.equal(engine.previewLudoPawnMove(state,'p1',0), null);
+});

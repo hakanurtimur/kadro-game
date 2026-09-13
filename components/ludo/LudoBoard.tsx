@@ -31,15 +31,28 @@ function posStyle(row:number,col:number,offset=0): CSSProperties {
   return { gridRowStart: row + 1, gridColumnStart: col + 1, transform: `translate(${jitter}px, ${offset>1?4:0}px)` };
 }
 
-export default function LudoBoard({ room, uid, legalMoves, onPawnClick }: {
+function progressPosition(room:LudoRoomState,uid:string,progress:number): [number,number] | null {
+  const player=room.players[uid];
+  if(!player)return null;
+  if(progress<52){const global=globalTrackCell(room,uid,progress);return global===null?null:TRACK[global];}
+  if(progress<57)return HOME_LANES[player.seat][progress-52];
+  if(progress===57)return [7,7];
+  return null;
+}
+
+export default function LudoBoard({ room, uid, legalMoves, selectedPawnIndex, previewProgress, onPawnClick, onConfirmMove }: {
   room: LudoRoomState;
   uid: string;
   legalMoves: number[];
+  selectedPawnIndex: number|null;
+  previewProgress: number|null;
   onPawnClick: (index:number)=>void;
+  onConfirmMove: ()=>void;
 }) {
   const trackCells = TRACK.map(([row,col], index) => ({row,col,index}));
   const lastPawn = room.lastAction?.pawnId;
   const capturedPawn = room.lastAction?.capturedPawnId;
+  const previewPosition=previewProgress===null?null:progressPosition(room,uid,previewProgress);
 
   return <div className="ludo-board-wrap">
     <div className="ludo-board" aria-label="Kızma Birader tahtası" role="application">
@@ -52,6 +65,8 @@ export default function LudoBoard({ room, uid, legalMoves, onPawnClick }: {
       {trackCells.map(({row,col,index}) => <div key={`t${index}`} className={`ludo-cell track ${STARTS.has(index)?`safe start-${COLORS[Math.floor(index/13)]}`:""}`} style={posStyle(row,col)}>{STARTS.has(index)&&<span>✦</span>}</div>)}
       {HOME_LANES.map((lane,seat) => lane.map(([row,col],index)=><div key={`h${seat}-${index}`} className={`ludo-cell home-lane ${COLORS[seat]}`} style={posStyle(row,col)} />))}
 
+      {previewPosition&&<button type="button" aria-label="Hedef kare · hamleyi onayla" title="Buraya git" onClick={onConfirmMove} style={{...posStyle(previewPosition[0],previewPosition[1]),zIndex:28,alignSelf:"center",justifySelf:"center",width:"44px",height:"44px",maxWidth:"96%",maxHeight:"96%",borderRadius:"50%",border:"3px solid #6f63d9",background:"rgba(255,255,255,.9)",color:"#5d52c7",fontWeight:950,fontSize:"18px",boxShadow:"0 0 0 5px rgba(111,99,217,.18),0 8px 18px rgba(75,62,125,.24)",cursor:"pointer",touchAction:"manipulation"}}>✓</button>}
+
       {Object.values(room.players).flatMap((player) => player.pawns.map((pawn,pawnIndex) => {
         let row:number, col:number;
         if (pawn.progress < 0) [row,col]=YARDS[player.seat][pawnIndex];
@@ -62,8 +77,10 @@ export default function LudoBoard({ room, uid, legalMoves, onPawnClick }: {
         else [row,col]=[7,7];
         const isMine=player.uid===uid;
         const legal=isMine&&legalMoves.includes(pawnIndex);
-        const classes=["ludo-pawn",player.color,legal?"legal":"",pawn.id===lastPawn?"moved":"",pawn.id===capturedPawn?"captured":"",pawn.shieldUntilTurn>=room.turnNumber?"shielded":"",pawn.progress===57?"finished":""].filter(Boolean).join(" ");
-        return <button key={pawn.id} type="button" aria-label={`${player.nickname} taş ${pawnIndex+1}`} className={classes} disabled={!legal} onClick={()=>legal&&onPawnClick(pawnIndex)} style={posStyle(row,col,pawn.progress===57?pawnIndex:0)}>
+        const selected=isMine&&selectedPawnIndex===pawnIndex;
+        const classes=["ludo-pawn",player.color,legal?"legal":"",selected?"selected":"",pawn.id===lastPawn?"moved":"",pawn.id===capturedPawn?"captured":"",pawn.shieldUntilTurn>=room.turnNumber?"shielded":"",pawn.progress===57?"finished":""].filter(Boolean).join(" ");
+        const style={...posStyle(row,col,pawn.progress===57?pawnIndex:0),...(selected?{filter:"drop-shadow(0 0 7px #fff) drop-shadow(0 0 12px #6f63d9)"}: {})};
+        return <button key={pawn.id} type="button" aria-label={`${player.nickname} taş ${pawnIndex+1}`} aria-pressed={selected} className={classes} disabled={!legal} onClick={()=>legal&&onPawnClick(pawnIndex)} style={style}>
           <span className="pawn-head"/><span className="pawn-body"/>{pawn.shieldUntilTurn>=room.turnNumber&&<i>✦</i>}
         </button>;
       }))}

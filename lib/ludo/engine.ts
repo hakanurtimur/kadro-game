@@ -307,11 +307,27 @@ function targetProgress(room: LudoRoomState, uid: string, pawn: LudoPawn, die: n
   return target;
 }
 
+function targetForPawn(room: LudoRoomState, uid: string, pawnIndex: number) {
+  const player = assertPlayer(room, uid);
+  const pawn = player.pawns[pawnIndex];
+  if (!pawn || !room.selectedDie) return null;
+  const target = targetProgress(room, uid, pawn, room.selectedDie);
+  if (target === null) return null;
+  if (target !== FINISH_PROGRESS && player.pawns.some((other, index) => index !== pawnIndex && other.progress === target)) return null;
+  return target;
+}
+
+export function previewLudoPawnMove(room: LudoRoomState, uid: string, pawnIndex: number): number | null {
+  const normalized = normalizeLudoState(room);
+  if (normalized.turnUid !== uid || normalized.phase !== "awaiting-move" || !normalized.selectedDie) return null;
+  return targetForPawn(normalized, uid, pawnIndex);
+}
+
 export function legalPawnMoves(room: LudoRoomState, uid: string): number[] {
   const normalized = normalizeLudoState(room);
   const player = assertPlayer(normalized, uid);
   if (normalized.turnUid !== uid || normalized.phase !== "awaiting-move" || !normalized.selectedDie) return [];
-  return player.pawns.map((pawn, index) => targetProgress(normalized, uid, pawn, normalized.selectedDie!) !== null ? index : -1).filter((index) => index >= 0);
+  return player.pawns.map((_, index) => targetForPawn(normalized, uid, index) !== null ? index : -1).filter((index) => index >= 0);
 }
 
 function captureAt(room: LudoRoomState, uid: string, pawn: LudoPawn) {
@@ -354,8 +370,10 @@ export function moveLudoPawn(room: LudoRoomState, uid: string, pawnIndex: number
   const player = assertPlayer(next, uid);
   const pawn = player.pawns[pawnIndex];
   if (!pawn) throw new LudoRuleError("Taş bulunamadı.");
-  const target = targetProgress(next, uid, pawn, next.selectedDie);
-  if (target === null) throw new LudoRuleError("Bu taş bu zarla oynayamaz.");
+  const rawTarget = targetProgress(next, uid, pawn, next.selectedDie);
+  if (rawTarget === null) throw new LudoRuleError("Bu taş bu zarla oynayamaz.");
+  const target = targetForPawn(next, uid, pawnIndex);
+  if (target === null) throw new LudoRuleError("Hedef kare kendi taşın tarafından dolu.");
   const die = next.selectedDie;
   pawn.progress = target;
   if (next.chaos.current?.kind === "shield") pawn.shieldUntilTurn = next.turnNumber + playerOrder(next).length;
