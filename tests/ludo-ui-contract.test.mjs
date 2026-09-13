@@ -21,5 +21,5 @@ test('ludo pawn selection previews a destination and requires confirmation befor
   assert.match(client,/previewLudoPawnMove/);
   assert.match(board,/previewProgress/);
   assert.match(board,/onConfirmMove/);
-  assert.match(board,/Hedef kare/);
+  assert.match(board,/hedef kare/i);
 });

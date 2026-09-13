@@ -40,6 +40,21 @@ function progressPosition(room:LudoRoomState,uid:string,progress:number): [numbe
   return null;
 }
 
+function previewPathPositions(room:LudoRoomState,uid:string,selectedPawnIndex:number|null,previewProgress:number|null) {
+  if(selectedPawnIndex===null||previewProgress===null)return [] as Array<{row:number;col:number;progress:number}>;
+  const pawn=room.players[uid]?.pawns[selectedPawnIndex];
+  if(!pawn)return [] as Array<{row:number;col:number;progress:number}>;
+  const sourceProgress=pawn.progress;
+  const firstProgress=sourceProgress<0?0:sourceProgress+1;
+  if(previewProgress<firstProgress)return [] as Array<{row:number;col:number;progress:number}>;
+  const path:Array<{row:number;col:number;progress:number}>=[];
+  for(let progress=firstProgress;progress<=previewProgress;progress++){
+    const position=progressPosition(room,uid,progress);
+    if(position)path.push({row:position[0],col:position[1],progress});
+  }
+  return path;
+}
+
 export default function LudoBoard({ room, uid, legalMoves, selectedPawnIndex, previewProgress, onPawnClick, onConfirmMove }: {
   room: LudoRoomState;
   uid: string;
@@ -52,7 +67,9 @@ export default function LudoBoard({ room, uid, legalMoves, selectedPawnIndex, pr
   const trackCells = TRACK.map(([row,col], index) => ({row,col,index}));
   const lastPawn = room.lastAction?.pawnId;
   const capturedPawn = room.lastAction?.capturedPawnId;
-  const previewPosition=previewProgress===null?null:progressPosition(room,uid,previewProgress);
+  const path=previewPathPositions(room,uid,selectedPawnIndex,previewProgress);
+  const previewPosition=path.length?path[path.length-1]:null;
+  const previewColor=room.players[uid]?.color??"red";
 
   return <div className="ludo-board-wrap">
     <div className="ludo-board" aria-label="Kızma Birader tahtası" role="application">
@@ -65,7 +82,11 @@ export default function LudoBoard({ room, uid, legalMoves, selectedPawnIndex, pr
       {trackCells.map(({row,col,index}) => <div key={`t${index}`} className={`ludo-cell track ${STARTS.has(index)?`safe start-${COLORS[Math.floor(index/13)]}`:""}`} style={posStyle(row,col)}>{STARTS.has(index)&&<span>✦</span>}</div>)}
       {HOME_LANES.map((lane,seat) => lane.map(([row,col],index)=><div key={`h${seat}-${index}`} className={`ludo-cell home-lane ${COLORS[seat]}`} style={posStyle(row,col)} />))}
 
-      {previewPosition&&<button type="button" aria-label="Hedef kare · hamleyi onayla" title="Buraya git" onClick={onConfirmMove} style={{...posStyle(previewPosition[0],previewPosition[1]),zIndex:28,alignSelf:"center",justifySelf:"center",width:"44px",height:"44px",maxWidth:"96%",maxHeight:"96%",borderRadius:"50%",border:"3px solid #6f63d9",background:"rgba(255,255,255,.9)",color:"#5d52c7",fontWeight:950,fontSize:"18px",boxShadow:"0 0 0 5px rgba(111,99,217,.18),0 8px 18px rgba(75,62,125,.24)",cursor:"pointer",touchAction:"manipulation"}}>✓</button>}
+      {path.map(({row,col,progress},index)=>{
+        const target=index===path.length-1;
+        return <div key={`preview-${progress}`} aria-hidden="true" className={`ludo-preview-route ${previewColor} ${target?"target":""}`} style={posStyle(row,col)}/>;
+      })}
+      {previewPosition&&<button type="button" className="ludo-preview-target-hitbox" aria-label="Parlayan hedef kare · hamleyi onayla" title="Buraya git" onClick={onConfirmMove} style={posStyle(previewPosition.row,previewPosition.col)}/>}
 
       {Object.values(room.players).flatMap((player) => player.pawns.map((pawn,pawnIndex) => {
         let row:number, col:number;
@@ -79,8 +100,7 @@ export default function LudoBoard({ room, uid, legalMoves, selectedPawnIndex, pr
         const legal=isMine&&legalMoves.includes(pawnIndex);
         const selected=isMine&&selectedPawnIndex===pawnIndex;
         const classes=["ludo-pawn",player.color,legal?"legal":"",selected?"selected":"",pawn.id===lastPawn?"moved":"",pawn.id===capturedPawn?"captured":"",pawn.shieldUntilTurn>=room.turnNumber?"shielded":"",pawn.progress===57?"finished":""].filter(Boolean).join(" ");
-        const style={...posStyle(row,col,pawn.progress===57?pawnIndex:0),...(selected?{filter:"drop-shadow(0 0 7px #fff) drop-shadow(0 0 12px #6f63d9)"}: {})};
-        return <button key={pawn.id} type="button" aria-label={`${player.nickname} taş ${pawnIndex+1}`} aria-pressed={selected} className={classes} disabled={!legal} onClick={()=>legal&&onPawnClick(pawnIndex)} style={style}>
+        return <button key={pawn.id} type="button" aria-label={`${player.nickname} taş ${pawnIndex+1}`} aria-pressed={selected} className={classes} disabled={!legal} onClick={()=>legal&&onPawnClick(pawnIndex)} style={posStyle(row,col,pawn.progress===57?pawnIndex:0)}>
           <span className="pawn-head"/><span className="pawn-body"/>{pawn.shieldUntilTurn>=room.turnNumber&&<i>✦</i>}
         </button>;
       }))}

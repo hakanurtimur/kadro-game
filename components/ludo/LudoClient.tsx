@@ -73,7 +73,7 @@ export default function LudoClient({ code }: { code:string }) {
   function selectPawn(index:number){
     if(actionBusy||previewLudoPawnMove(currentRoom,actorUid,index)===null)return;
     setSelectedPawn(index);
-    setToast("Hedef kareyi kontrol et; uygunsa ✓ işaretine dokun.");
+    setToast("Gideceğin rota renklendi. Parlayan hedef kareye dokunup hamleyi onayla.");
   }
   async function confirmMove(){
     if(selectedPawn===null)return;
@@ -134,7 +134,7 @@ export default function LudoClient({ code }: { code:string }) {
           <div className={`big-die ${rolling?'rolling':''}`}>{room.dice.length?room.dice.map((die,index)=><span key={`${die}-${index}`}>{DICE[die-1]}</span>):<span>⚄</span>}</div>
           {myTurn&&room.phase==='awaiting-roll'&&<button className="ludo-roll-button" disabled={rolling||actionBusy} onClick={roll}><Dices size={20}/>{rolling?'Dönüyor…':'Zarı at'}</button>}
           {myTurn&&room.phase==='choose-die'&&<div className="choose-dice"><p>Hangisini kullanacaksın?</p>{room.dice.map((die,index)=><button key={`${die}-${index}`} disabled={actionBusy} onClick={()=>chooseDie(die)}>{DICE[die-1]} <b>{die}</b></button>)}</div>}
-          {myTurn&&room.phase==='awaiting-move'&&legal.length>0&&<p className="move-hint">{selectedPawn===null?"✨ Parlayan taşlardan birini seç.":"✓ Gideceği kareyi gösterdim. Hedefe dokunup onayla."}</p>}
+          {myTurn&&room.phase==='awaiting-move'&&legal.length>0&&<p className="move-hint">{selectedPawn===null?"✨ Parlayan taşlardan birini seç.":"Rota gösterildi. Parlayan hedef kareye dokunup onayla."}</p>}
           {myTurn&&room.phase==='awaiting-move'&&!legal.length&&<button className="secondary-button" disabled={actionBusy} onClick={pass}><RotateCcw size={16}/> Hamle yok · turu geç</button>}
           {!myTurn&&room.status==='playing'&&<p className="waiting-copy">{turnPlayer?.nickname} zar atıyor…</p>}
         </div>
