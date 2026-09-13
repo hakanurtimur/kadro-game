@@ -11,9 +11,9 @@ export default function GamesHome() {
       <div className="hub-orb hub-orb-a" />
       <div className="hub-orb hub-orb-b" />
       <section className="games-hub-hero">
-        <span className="brand-chip"><Sparkles size={16}/> aynı masa, iki oyun</span>
+        <span className="brand-chip"><Sparkles size={16}/> aynı masa, üç oyun</span>
         <h1>Bu gece ne oynuyoruz?</h1>
-        <p>Oda kodunu paylaş, tarayıcıdan direkt gir. İstersen AI destekli KADRO, istersen klasik Kızma Birader.</p>
+        <p>Oda kodunu paylaş, tarayıcıdan direkt gir. AI destekli KADRO, klasik Kızma Birader veya iki kişilik kaydırma oyunu TAŞIR.</p>
       </section>
 
       <section className="game-choice-grid">
@@ -35,6 +35,17 @@ export default function GamesHome() {
             <h2>Kızma Birader Oyna</h2>
             <p>4 taş, 6 ile çıkış, rakibi yeme, tam zarla eve giriş. İstersen Kaos kartlarını aç.</p>
             <div className="choice-pills"><span><Users size={14}/> 2–4 kişi</span><span>⚡ Klasik / Kaos</span></div>
+          </div>
+          <span className="choice-go">Gir <ArrowRight size={18}/></span>
+        </button>
+
+        <button className="game-choice-card" onClick={() => router.push("/tasir")}>
+          <div className="game-choice-art" style={{background:"linear-gradient(145deg,#eeeaff,#fff0cc)",fontSize:52}}>↕</div>
+          <div className="game-choice-copy">
+            <small>2 KİŞİLİK KAYDIRMA OYUNU</small>
+            <h2>TAŞIR Oyna</h2>
+            <p>4×5 kapalı taşları kaydır. Taşan sayı seninse devam et; rakibinse eli karşıya ver.</p>
+            <div className="choice-pills"><span><Users size={14}/> tam 2 kişi</span><span>★ Joker + TKM</span></div>
           </div>
           <span className="choice-go">Gir <ArrowRight size={18}/></span>
         </button>
