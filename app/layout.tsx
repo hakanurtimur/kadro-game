@@ -1,10 +1,17 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./party-upgrade.css";
 
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export const metadata: Metadata = {
-  title: "KADRO! — AI Auction Party Game",
-  description: "Karakterleri açık artırmada kap, kadronu kur, AI jüriyi ikna et.",
+  title: "KADRO! Oyun Masası",
+  description: "KADRO veya Kızma Birader: arkadaşlarınla tarayıcıdan anında oyna.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

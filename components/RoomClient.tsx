@@ -340,11 +340,11 @@ export default function RoomClient({ code }: { code: string }) {
   },[room,experience.play]);
 
   if (!room || !uid) {
-    return <main className="loading-screen"><div className="loading-mascot"><PolyAvatar seed="loading" size={84}/><span>{toast || "KADRO masası kuruluyor…"}</span>{toast&&<button className="secondary-button" onClick={()=>router.push("/")}>Ana sayfa</button>}</div></main>;
+    return <main className="loading-screen"><div className="loading-mascot"><PolyAvatar seed="loading" size={84}/><span>{toast || "KADRO masası kuruluyor…"}</span>{toast&&<button className="secondary-button" onClick={()=>router.push("/kadro")}>Ana sayfa</button>}</div></main>;
   }
 
   if (room.schemaVersion !== 2) {
-    return <main className="loading-screen"><section className="empty-card kawaii-card"><h2>Yeni moderatör masası hazır.</h2><p>Bu oda önceki sürümle açılmış. Oyuncu kadrolarını değiştirmemek için eski oda otomatik dönüştürülmedi. Herkes sayfayı yenilesin ve yeni bir oda açın.</p><button className="primary-button" onClick={()=>router.push("/")}>Yeni oda aç</button></section></main>;
+    return <main className="loading-screen"><section className="empty-card kawaii-card"><h2>Yeni moderatör masası hazır.</h2><p>Bu oda önceki sürümle açılmış. Oyuncu kadrolarını değiştirmemek için eski oda otomatik dönüştürülmedi. Herkes sayfayı yenilesin ve yeni bir oda açın.</p><button className="primary-button" onClick={()=>router.push("/kadro")}>Yeni oda aç</button></section></main>;
   }
 
   if (!me && !isHost) {
@@ -353,7 +353,7 @@ export default function RoomClient({ code }: { code: string }) {
         <div className="empty-card kawaii-card">
           <h2>Bu sekme odada değil.</h2>
           <p>Nickname ile tekrar katılman gerekiyor.</p>
-          <button className="primary-button" onClick={() => router.push("/")}>Ana sayfaya dön</button>
+          <button className="primary-button" onClick={() => router.push("/kadro")}>Ana sayfaya dön</button>
         </div>
       </main>
     );
@@ -369,7 +369,7 @@ export default function RoomClient({ code }: { code: string }) {
     <main className={`room-shell ${experience.reducedMotion ? "reduce-motion" : ""}`} data-scene={sceneTheme(room.scenario)}>
       <div className="soft-grid" />
       <header className="room-topbar">
-        <button className="mini-logo" onClick={() => router.push("/")}>KADRO<span>!</span></button>
+        <button className="mini-logo" onClick={() => router.push("/kadro")}>KADRO<span>!</span></button>
         <div className="room-meta">
           <button className="room-code" onClick={() => navigator.clipboard.writeText(code)}>{code}<Copy size={14}/></button>
           <span className={`mode-badge ${store.mode}`}>{store.mode === "firebase" ? "● ONLINE" : "● LOCAL"}</span>

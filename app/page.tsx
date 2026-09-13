@@ -1,107 +1,43 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Coins, Gamepad2, Sparkles, Users } from "lucide-react";
-import GameGuide from "@/components/GameGuide";
-import PolyAvatar from "@/components/PolyAvatar";
-import { getGameStore } from "@/lib/game-store";
+import { ArrowRight, Bot, Dices, Sparkles, Users } from "lucide-react";
 
-export default function Home() {
+export default function GamesHome() {
   const router = useRouter();
-  const store = useMemo(() => getGameStore(), []);
-  const [nickname, setNickname] = useState("");
-  const [roomCode, setRoomCode] = useState("");
-  const [budget, setBudget] = useState(100);
-  const [slots, setSlots] = useState(5);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  async function handleCreate() {
-    if (!nickname.trim()) return setError("Önce bir nickname yaz ✨");
-    setLoading(true);
-    setError("");
-    try {
-      const { room } = await store.createRoom(nickname, budget, slots);
-      sessionStorage.setItem("kadro:nickname", nickname.trim());
-      router.push(`/room/${room.code}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Oda oluşturulamadı.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleJoin() {
-    if (!nickname.trim() || !roomCode.trim()) return setError("Nickname ve oda kodu lazım.");
-    setLoading(true);
-    setError("");
-    try {
-      const { room } = await store.joinRoom(roomCode, nickname);
-      sessionStorage.setItem("kadro:nickname", nickname.trim());
-      router.push(`/room/${room.code}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Odaya girilemedi.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   return (
-    <main className="home-shell">
+    <main className="games-hub-shell">
       <div className="soft-grid" />
-      <div className="floating-gem gem-a" />
-      <div className="floating-gem gem-b" />
-      <div className="floating-gem gem-c" />
-
-      <section className="home-hero">
-        <div className="brand-chip"><Gamepad2 size={16} /> browser party game</div>
-        <div className="home-logo-wrap">
-          <h1>KADRO<span>!</span></h1>
-          <div className="logo-spark">✦</div>
-        </div>
-        <p className="hero-copy">Paranı harca, karakterleri kap, absürt göreve en iyi ekibi kur. Son sözü AI jüri söylesin.</p>
-        <div className="hero-pills">
-          <span><Users size={15}/> 1 moderatör + 2–8 oyuncu</span>
-          <span><Coins size={15}/> canlı açık artırma</span>
-          <span><Sparkles size={15}/> AI jüri</span>
-        </div>
-        <GameGuide/>
-        <div className="avatar-parade" aria-hidden="true">
-          {["momo", "yuki", "kiki", "toto"].map((seed, index) => <PolyAvatar key={seed} seed={seed} size={64 + index * 3} />)}
-        </div>
+      <div className="hub-orb hub-orb-a" />
+      <div className="hub-orb hub-orb-b" />
+      <section className="games-hub-hero">
+        <span className="brand-chip"><Sparkles size={16}/> aynı masa, iki oyun</span>
+        <h1>Bu gece ne oynuyoruz?</h1>
+        <p>Oda kodunu paylaş, tarayıcıdan direkt gir. İstersen AI destekli KADRO, istersen klasik Kızma Birader.</p>
       </section>
 
-      <section className="join-card kawaii-card">
-        <div className="mode-row">
-          <span className="tiny-label">HIZLI GİRİŞ</span>
-          <span className={`mode-badge ${store.mode}`}>{store.mode === "firebase" ? "● ONLINE" : "● LOCAL DEMO"}</span>
-        </div>
-        <label htmlFor="home-nickname">Nickname</label>
-        <input id="home-nickname" value={nickname} onChange={(event) => setNickname(event.target.value)} placeholder="örn. Hakan" maxLength={20} autoComplete="off" />
-
-        <div className="section-divider"><span>ODA KUR</span><span>AYARLAR</span></div>
-        <div className="settings-grid">
-          <div>
-            <label>Bütçe</label>
-            <div className="number-input"><span>₺</span><input type="number" min={20} max={500} step={10} value={budget} onChange={(event) => setBudget(Number(event.target.value))}/></div>
+      <section className="game-choice-grid">
+        <button className="game-choice-card kadro-choice" onClick={() => router.push("/kadro")}>
+          <div className="game-choice-art kadro-choice-art"><Bot size={46}/><span>✦</span></div>
+          <div className="game-choice-copy">
+            <small>AI PARTY GAME</small>
+            <h2>KADRO Oyna</h2>
+            <p>Karakterleri açık artırmada kap, en iyi ekibi kur, AI jüriye meydan oku.</p>
+            <div className="choice-pills"><span><Users size={14}/> moderatör + oyuncular</span><span>🎲 Kaos</span></div>
           </div>
-          <div>
-            <label>Kadro</label>
-            <div className="number-input"><input type="number" min={3} max={8} value={slots} onChange={(event) => setSlots(Number(event.target.value))}/><span>slot</span></div>
-          </div>
-        </div>
-        <p className="moderator-create-note">Odayı kurarsan <b>moderatör</b> olursun; oynamazsın. Yarışmak için bir arkadaşının odasına katıl.</p>
-        <button className="primary-button" disabled={loading} onClick={handleCreate}>{loading ? "Hazırlanıyor…" : "Moderatör olarak oda kur"}<ArrowRight size={18}/></button>
+          <span className="choice-go">Gir <ArrowRight size={18}/></span>
+        </button>
 
-        <div className="or"><span>veya</span></div>
-        <label>Oda kodu</label>
-        <div className="join-row">
-          <input value={roomCode} onChange={(event) => setRoomCode(event.target.value.toUpperCase().replace(/[^A-Z2-9]/g, ""))} placeholder="K4DRO" maxLength={5}/>
-          <button onClick={handleJoin} disabled={loading}>Katıl</button>
-        </div>
-        {error && <p className="inline-error">{error}</p>}
-        {store.mode === "local" && <p className="demo-note">Firebase env yokken üç ayrı sekme aç: biri moderatör, ikisi oyuncu olsun.</p>}
+        <button className="game-choice-card ludo-choice" onClick={() => router.push("/ludo")}>
+          <div className="game-choice-art ludo-choice-art"><Dices size={48}/><span>● ● ● ●</span></div>
+          <div className="game-choice-copy">
+            <small>KLASİK MASA OYUNU</small>
+            <h2>Kızma Birader Oyna</h2>
+            <p>4 taş, 6 ile çıkış, rakibi yeme, tam zarla eve giriş. İstersen Kaos kartlarını aç.</p>
+            <div className="choice-pills"><span><Users size={14}/> 2–4 kişi</span><span>⚡ Klasik / Kaos</span></div>
+          </div>
+          <span className="choice-go">Gir <ArrowRight size={18}/></span>
+        </button>
       </section>
     </main>
   );
