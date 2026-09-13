@@ -7,7 +7,7 @@ import LudoBoard from "./LudoBoard";
 import LudoGuide from "./LudoGuide";
 import { chooseLudoDie, finishNoMove, legalPawnMoves, moveLudoPawn, previewLudoPawnMove, rollLudoDice, setLudoMode, startLudoGame } from "@/lib/ludo/engine";
 import { getLudoStore } from "@/lib/ludo/store";
-import { getLudoSoundEnabled, playLudoSfx, setLudoSoundEnabled } from "@/lib/ludo/sound";
+import { getLudoSoundEnabled, playLudoSfx, setLudoSoundEnabled, unlockLudoAudio } from "@/lib/ludo/sound";
 import type { LudoMode, LudoRoomState } from "@/lib/ludo/types";
 
 const DICE = ["⚀","⚁","⚂","⚃","⚄","⚅"];
@@ -35,7 +35,13 @@ export default function LudoClient({ code }: { code:string }) {
   },[code,store]);
 
   useEffect(()=>{ setSelectedPawn(null); },[room?.turnUid,room?.turnNumber,room?.phase,room?.selectedDie]);
-  useEffect(()=>{ setSoundEnabledState(getLudoSoundEnabled()); },[]);
+  useEffect(()=>{
+    setSoundEnabledState(getLudoSoundEnabled());
+    const unlock=()=>{void unlockLudoAudio();};
+    window.addEventListener("pointerdown",unlock,{capture:true,once:true});
+    window.addEventListener("touchstart",unlock,{capture:true,once:true,passive:true});
+    return()=>{window.removeEventListener("pointerdown",unlock,true);window.removeEventListener("touchstart",unlock,true);};
+  },[]);
 
   if(!room||!uid) return <main className="loading-screen"><div className="ludo-loading"><Dices size={56}/><span>{toast||"Tahta kuruluyor…"}</span></div></main>;
   const actorUid = uid;
@@ -63,7 +69,7 @@ export default function LudoClient({ code }: { code:string }) {
     const next=!soundEnabled;
     setLudoSoundEnabled(next);
     setSoundEnabledState(next);
-    if(next) playLudoSfx("confirm");
+    if(next){void unlockLudoAudio();playLudoSfx("confirm");}
   }
   function playMoveOutcome(next:LudoRoomState,steps:number){
     const delay=Math.min(8,Math.max(1,steps))*0.055+0.04;
@@ -76,13 +82,14 @@ export default function LudoClient({ code }: { code:string }) {
   async function start(){playLudoSfx("confirm");await runAction(async()=>{try{await mutate((state)=>startLudoGame(state,actorUid));}catch{}});}
   async function roll(){
     if(actionBusy||rolling||!myTurn||!room||room.phase!=='awaiting-roll')return;
+    void unlockLudoAudio();
     playLudoSfx("roll");
     setActionBusy(true); setRolling(true); setToast("Zar dönüyor…");
     await new Promise((resolve)=>setTimeout(resolve,520));
     try {
       const next=await mutate((state)=>rollLudoDice(state,actorUid));
       const moves=next.phase==='awaiting-move'?legalPawnMoves(next,actorUid):[];
-      if(next.phase==='awaiting-move'&&!moves.length) setToast("Oynayacak taş yok. Turu geçebilirsin.");
+      if(next.phase==='awaiting-move'&&!moves.length){playLudoSfx("invalid",{delay:.08});setToast("Oynayacak taş yok. Turu geçebilirsin.");}
       else setToast("");
     } catch{} finally{setRolling(false);setActionBusy(false);}
   }
@@ -102,7 +109,7 @@ export default function LudoClient({ code }: { code:string }) {
     playLudoSfx("confirm");
     await runAction(async()=>{try{const next=await mutate((state)=>moveLudoPawn(state,actorUid,index));playLudoSfx("move",{steps});playMoveOutcome(next,steps);setToast("");}catch{}});
   }
-  async function pass(){await runAction(async()=>{try{const next=await mutate((state)=>finishNoMove(state,actorUid));if(next.lastAction?.type==='chaos')playLudoSfx("chaos");setToast("");}catch{}});}
+  async function pass(){void unlockLudoAudio();playLudoSfx("invalid");await runAction(async()=>{try{const next=await mutate((state)=>finishNoMove(state,actorUid));if(next.lastAction?.type==='chaos')playLudoSfx("chaos");setToast("");}catch{}});}
 
   return <main className={`ludo-room-shell ludo-theme-${room.mode}`} aria-busy={actionBusy||rolling}>
     <div className="soft-grid"/>

@@ -38,6 +38,19 @@ function getAudioContext() {
   return audioContext;
 }
 
+function noise(ctx: AudioContext, at: number, duration: number, gain = 0.025) {
+  const length=Math.max(1,Math.floor(ctx.sampleRate*duration));
+  const buffer=ctx.createBuffer(1,length,ctx.sampleRate);
+  const data=buffer.getChannelData(0);
+  for(let i=0;i<length;i++) data[i]=(Math.random()*2-1)*(1-i/length);
+  const source=ctx.createBufferSource();
+  const amp=ctx.createGain();
+  source.buffer=buffer;
+  amp.gain.setValueAtTime(gain,at);
+  amp.gain.exponentialRampToValueAtTime(.0001,at+duration);
+  source.connect(amp);amp.connect(ctx.destination);source.start(at);source.stop(at+duration+.01);
+}
+
 function tone(ctx: AudioContext, at: number, frequency: number, duration: number, gain = 0.035, type: OscillatorType = "sine", endFrequency?: number) {
   const oscillator = ctx.createOscillator();
   const amp = ctx.createGain();
@@ -58,8 +71,9 @@ function scheduleEffect(ctx: AudioContext, effect: LudoSfx, options: LudoSfxOpti
   const start = ctx.currentTime + 0.008 + Math.max(0, options.delay ?? 0);
   switch (effect) {
     case "roll":
-      [170, 225, 188, 252, 205].forEach((frequency, index) => tone(ctx, start + index * 0.045, frequency, 0.035, 0.026, "square"));
-      tone(ctx, start + 0.235, 115, 0.085, 0.04, "triangle", 82);
+      noise(ctx,start,.24,.024);
+      [156,210,174,236,198,260].forEach((frequency,index)=>tone(ctx,start+index*.042,frequency,.028,.024,index%2?"triangle":"square",frequency*.78));
+      tone(ctx,start+.255,118,.095,.045,"triangle",76);
       break;
     case "select":
       tone(ctx, start, 520, 0.05, 0.025, "sine", 660);
@@ -71,13 +85,17 @@ function scheduleEffect(ctx: AudioContext, effect: LudoSfx, options: LudoSfxOpti
     case "move": {
       const steps = Math.max(1, Math.min(8, Math.round(options.steps ?? 1)));
       for (let index = 0; index < steps; index++) {
-        tone(ctx, start + index * 0.055, index % 2 ? 175 : 145, 0.036, 0.028, "triangle", index % 2 ? 138 : 118);
+        const at=start+index*.06;
+        noise(ctx,at,.025,.012);
+        tone(ctx,at,index%2?190:155,.042,.032,"triangle",index%2?128:112);
       }
       break;
     }
     case "capture":
-      tone(ctx, start, 330, 0.13, 0.042, "sawtooth", 72);
-      tone(ctx, start + 0.075, 760, 0.09, 0.032, "square", 170);
+      noise(ctx,start,.11,.055);
+      tone(ctx,start,420,.14,.05,"sawtooth",68);
+      tone(ctx,start+.07,840,.095,.038,"square",150);
+      tone(ctx,start+.145,110,.11,.045,"triangle",62);
       break;
     case "home":
       tone(ctx, start, 540, 0.11, 0.028, "sine", 640);
@@ -93,8 +111,20 @@ function scheduleEffect(ctx: AudioContext, effect: LudoSfx, options: LudoSfxOpti
       tone(ctx, start + 0.43, 1318, 0.35, 0.026, "triangle", 1568);
       break;
     case "invalid":
-      tone(ctx, start, 185, 0.075, 0.025, "square", 125);
+      tone(ctx,start,205,.09,.034,"square",132);
+      tone(ctx,start+.09,154,.11,.03,"triangle",104);
       break;
+  }
+}
+
+export async function unlockLudoAudio() {
+  if (!enabled || typeof window === "undefined") return;
+  const ctx=getAudioContext();
+  if(!ctx)return;
+  if(ctx.state==="suspended") { try{await ctx.resume();}catch{} }
+  if(ctx.state==="running"){
+    const osc=ctx.createOscillator();const gain=ctx.createGain();
+    gain.gain.value=.00001;osc.connect(gain);gain.connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+.008);
   }
 }
 

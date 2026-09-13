@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Copy, Play, RotateCcw } from "lucide-react";
+import { ArrowLeft, Copy, Play, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import {
   chooseTasirRps,
   playTasirColumn,
@@ -15,6 +15,7 @@ import {
 } from "@/lib/tasir/engine";
 import { tasirSymbol } from "@/lib/tasir/symbols";
 import { getTasirStore } from "@/lib/tasir/store";
+import { getTasirSoundEnabled, playTasirSfx, setTasirSoundEnabled, unlockTasirAudio } from "@/lib/tasir/sound";
 import type { TasirBoardTile, TasirLastAction, TasirPlayer, TasirRoomState, TasirRpsChoice, TasirTile } from "@/lib/tasir/types";
 import styles from "@/app/tasir/tasir.module.css";
 
@@ -39,6 +40,7 @@ export default function TasirClient({code}:{code:string}){
   const[loading,setLoading]=useState(true);
   const[actionBusy,setActionBusy]=useState(false);
   const[toast,setToast]=useState("");
+  const[soundEnabled,setSoundEnabledState]=useState(true);
 
   useEffect(()=>{
     let off:(()=>void)|undefined;let live=true;
@@ -51,11 +53,22 @@ export default function TasirClient({code}:{code:string}){
     return()=>{live=false;off?.();};
   },[code,store]);
 
+  useEffect(()=>{
+    setSoundEnabledState(getTasirSoundEnabled());
+    const unlock=()=>{void unlockTasirAudio();};
+    window.addEventListener("pointerdown",unlock,{capture:true,once:true});
+    window.addEventListener("touchstart",unlock,{capture:true,once:true,passive:true});
+    return()=>{
+      window.removeEventListener("pointerdown",unlock,true);
+      window.removeEventListener("touchstart",unlock,true);
+    };
+  },[]);
+
   async function run(work:()=>Promise<void>){
     if(actionBusy)return;
     setActionBusy(true);
     try{await work();}
-    catch(e){setToast(e instanceof Error?e.message:"İşlem olmadı.");}
+    catch(e){playTasirSfx("invalid");setToast(e instanceof Error?e.message:"İşlem olmadı.");}
     finally{setActionBusy(false);}
   }
 
@@ -73,25 +86,46 @@ export default function TasirClient({code}:{code:string}){
   const legalColumns=tasirLegalColumns(room,actorUid);
   const nextTarget=room.heldTile==="joker"?null:room.heldTile;
 
-  async function mutate(transition:(state:TasirRoomState)=>TasirRoomState){await store.mutate(code,transition);}
+  async function mutate(transition:(state:TasirRoomState)=>TasirRoomState){return await store.mutate(code,transition);}
+  function toggleSound(){
+    const next=!soundEnabled;
+    setTasirSoundEnabled(next);
+    setSoundEnabledState(next);
+    if(next){void unlockTasirAudio();playTasirSfx("reveal");}
+  }
+  async function playColumn(column:number){
+    void unlockTasirAudio();
+    await run(async()=>{
+      const next=await mutate((state)=>playTasirColumn(state,actorUid,column));
+      const action=next.lastAction;
+      playTasirSfx("shift");
+      playTasirSfx("reveal",{delay:.17});
+      if(next.status==='finished'&&next.winnerUid===actorUid) playTasirSfx("win",{delay:.34});
+      else if(next.turnUid!==actorUid) playTasirSfx("handoff",{delay:.31});
+      else if(action?.overflow==='joker') playTasirSfx("joker",{delay:.3});
+    });
+  }
 
   return <main className={styles.room}>
     <header className={styles.topbar}>
       <button onClick={()=>router.push('/tasir')}><ArrowLeft size={15}/> Çık</button>
-      <button onClick={()=>{navigator.clipboard?.writeText(code);setToast("Oda kodu kopyalandı.");}}><Copy size={14}/> {code}</button>
+      <div className={styles.topActions}>
+        <button className={styles.soundToggle} type="button" aria-pressed={soundEnabled} aria-label={soundEnabled?"TAŞIR seslerini kapat":"TAŞIR seslerini aç"} onClick={toggleSound}>{soundEnabled?<Volume2 size={16}/>:<VolumeX size={16}/>}<span>{soundEnabled?"Ses açık":"Sessiz"}</span></button>
+        <button onClick={()=>{void unlockTasirAudio();navigator.clipboard?.writeText(code);setToast("Oda kodu kopyalandı.");}}><Copy size={14}/> {code}</button>
+      </div>
     </header>
 
     {room.status==='lobby'&&<section className={styles.lobby}><div className={styles.centerCard}>
       <span className={styles.chip}>TAŞIR · LOBİ</span><h1>Rakibini bekle</h1>
       <p>Her oyuncunun 5 hedef hattı var; her hatta aynı sembolden 4 taş toplamaya çalışacaksınız.</p>
       <div className={styles.seats}>{[0,1].map((seat)=>{const p=players.find((x)=>x.seat===seat);const range=tasirOwnedRange(seat);return <div key={seat} className={`${styles.seat} ${p?styles.filled:""}`}><b>{p?.nickname||"Boş koltuk"}</b><small>{range[0]}–{range[1]} hedef hatları</small></div>;})}</div>
-      {actorUid===room.hostUid?<button className={styles.primary} disabled={players.length!==2||actionBusy} onClick={()=>run(()=>mutate((state)=>startTasirRps(state,actorUid)))}><Play size={17}/> Taş–Kağıt–Makas'a geç</button>:<p>Host oyunu başlatacak.</p>}
+      {actorUid===room.hostUid?<button className={styles.primary} disabled={players.length!==2||actionBusy} onClick={()=>{void unlockTasirAudio();playTasirSfx("rps");run(()=>mutate((state)=>startTasirRps(state,actorUid)).then(()=>undefined));}}><Play size={17}/> Taş–Kağıt–Makas'a geç</button>:<p>Host oyunu başlatacak.</p>}
     </div></section>}
 
     {room.status==='rps'&&<section className={styles.rps}><div className={styles.centerCard}>
       <span className={styles.chip}>BAŞLANGIÇ · TUR {room.rps.round}</span><h1>Kim başlayacak?</h1>
       <p>Kazanan Joker ile kendi beş hattından istediğini ilk kez kaydırır.</p>
-      <div className={styles.rpsChoices}>{RPS.map((item)=><button key={item.value} disabled={!!room.rps.choices[actorUid]||actionBusy} onClick={()=>run(()=>mutate((state)=>chooseTasirRps(state,actorUid,item.value)))}><span>{item.emoji}</span>{item.label}</button>)}</div>
+      <div className={styles.rpsChoices}>{RPS.map((item)=><button key={item.value} disabled={!!room.rps.choices[actorUid]||actionBusy} onClick={()=>{void unlockTasirAudio();playTasirSfx("rps");run(()=>mutate((state)=>chooseTasirRps(state,actorUid,item.value)).then(()=>undefined));}}><span>{item.emoji}</span>{item.label}</button>)}</div>
       {room.rps.choices[actorUid]&&<b>Seçtin ✓ Rakip bekleniyor…</b>}
     </div></section>}
 
@@ -105,7 +139,7 @@ export default function TasirClient({code}:{code:string}){
       <div className={styles.table}>
         <PlayerBoard label={opponent?.nickname||"Rakip"} player={opponent} active={false} moveNumber={room.moveNumber} action={room.lastAction?.playerUid===opponent?.uid?room.lastAction:null}/>
         <div className={styles.flow}>{room.lastAction?<ActionFlow action={room.lastAction} players={room.players}/>:<><span className={`${styles.overflow} ${styles.joker}`}><TileMark tile="joker"/></span><p>Joker ortada. Başlayan oyuncu kendi beş hedef hattından birini seçer.</p></>}</div>
-        <PlayerBoard label={`${me.nickname} · Sen`} player={me} active={myTurn&&room.status==='playing'} legalColumns={legalColumns} moveNumber={room.moveNumber} action={room.lastAction?.playerUid===me.uid?room.lastAction:null} onColumn={(column)=>run(()=>mutate((state)=>playTasirColumn(state,actorUid,column)))} busy={actionBusy}/>
+        <PlayerBoard label={`${me.nickname} · Sen`} player={me} active={myTurn&&room.status==='playing'} legalColumns={legalColumns} moveNumber={room.moveNumber} action={room.lastAction?.playerUid===me.uid?room.lastAction:null} onColumn={playColumn} busy={actionBusy}/>
       </div>
 
       {room.status==='finished'&&<div className={styles.winOverlay}><div><span>✦</span><h2>{winner?.nickname} TAŞIR!</h2><p>Beş hedef hattını da kendi sembolüyle 4/4 tamamladı.</p><button onClick={()=>router.push('/tasir')}><RotateCcw size={16}/> Yeni oda</button></div></div>}

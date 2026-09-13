@@ -760,3 +760,11 @@ html, body { max-width: 100%; overflow-x: hidden; }
   .ludo-sound-toggle { width:44px; height:44px; min-height:44px; padding:0; }
   .ludo-sound-toggle span { display:none; }
 }
+
+
+/* Patch 04c-r1 — mobile Ludo preview without recoloring board cells */
+@media (max-width:780px){
+  .ludo-preview-route{background:transparent!important;border:0!important;box-shadow:inset 0 0 0 2px rgba(117,109,220,.78)!important;transform:none!important;filter:none!important;pointer-events:none!important}
+  .ludo-preview-route.target{background:transparent!important;box-shadow:inset 0 0 0 3px #756ddc,0 0 0 2px rgba(255,255,255,.9)!important;transform:none!important}
+  .ludo-preview-target-hitbox{background:transparent!important;box-shadow:inset 0 0 0 3px #756ddc!important;transform:none!important}
+}
