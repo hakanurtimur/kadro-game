@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Copy, Crown, Dices, RotateCcw, Shield, Sparkles, Users, Volume2, VolumeX, Zap } from "lucide-react";
 import LudoBoard from "./LudoBoard";
 import LudoGuide from "./LudoGuide";
+import LudoDie from "./LudoDie";
 import GameSocial from "@/components/social/GameSocial";
 import { chooseLudoDie, finishNoMove, legalPawnMoves, moveLudoPawn, previewLudoPawnMove, rollLudoDice, setLudoMode, startLudoGame } from "@/lib/ludo/engine";
 import { getLudoStore } from "@/lib/ludo/store";
 import { getLudoSoundEnabled, playLudoSfx, setLudoSoundEnabled, unlockLudoAudio } from "@/lib/ludo/sound";
 import type { LudoMode, LudoRoomState } from "@/lib/ludo/types";
 
-const DICE = ["⚀","⚁","⚂","⚃","⚄","⚅"];
 
 export default function LudoClient({ code }: { code:string }) {
   const router=useRouter();
@@ -65,6 +65,27 @@ export default function LudoClient({ code }: { code:string }) {
   const legal=myTurn?legalPawnMoves(room,uid):[];
   const winner=room.winnerUid?room.players[room.winnerUid]:null;
   const previewProgress=selectedPawn===null?null:previewLudoPawnMove(currentRoom,actorUid,selectedPawn);
+  const consoleColor=turnPlayer?.color??me.color;
+  const consoleTitle=room.status==='finished'
+    ? 'Oyun bitti'
+    : myTurn
+      ? 'Sıra sende'
+      : `${turnPlayer?.nickname??'Rakip'} oynuyor`;
+  const consoleDetail=rolling
+    ? 'Zar dönüyor…'
+    : myTurn
+      ? room.phase==='awaiting-roll'
+        ? 'Zarı at ve hamleni başlat.'
+        : room.phase==='choose-die'
+          ? 'Kullanacağın zarı seç.'
+          : selectedPawn===null
+            ? 'Parlayan taşlardan birini seç.'
+            : 'Hedef kareye dokunup onayla.'
+      : room.dice.length&&turnPlayer
+        ? `${turnPlayer.nickname} ${room.dice.join(' / ')} attı.`
+        : 'Hamlesini bekliyoruz.';
+  const displayDice=room.dice.length?room.dice:[5];
+  const actionMark=room.lastAction?.type==='capture'?'×':room.lastAction?.type==='home'?'★':room.lastAction?.type==='chaos'?'⚡':room.lastAction?.type==='roll'?'•':'↗';
 
   async function mutate(fn:(state:LudoRoomState)=>LudoRoomState){
     try{return await store.mutate(code,fn);}catch(error){setToast(error instanceof Error?error.message:"İşlem yapılamadı.");throw error;}
@@ -152,7 +173,7 @@ export default function LudoClient({ code }: { code:string }) {
     {room.status!=='lobby' && <section className="ludo-game-layout">
       <aside className="ludo-sidebar ludo-sidebar-left">
         <div className="ludo-turn-card kawaii-card">
-          <small>SIRA</small>
+          <small>Şimdi oynuyor</small>
           <strong>{turnPlayer?.nickname||'Oyun bitti'}</strong>
           {turnPlayer&&<span className={`turn-color-dot ${turnPlayer.color}`}/>}
           <p>Tur {room.turnNumber+1}</p>
@@ -165,18 +186,28 @@ export default function LudoClient({ code }: { code:string }) {
 
       <div className="ludo-board-stage">
         <LudoBoard room={room} uid={uid} legalMoves={legal} selectedPawnIndex={selectedPawn} previewProgress={previewProgress} onPawnClick={selectPawn} onConfirmMove={confirmMove}/>
-        {room.lastAction&&<div className={`ludo-action-toast action-${room.lastAction.type}`}>{room.lastAction.message}</div>}
+        {room.lastAction&&<div className={`ludo-action-toast action-${room.lastAction.type}`}>
+          <span className="ludo-action-mark" aria-hidden="true">{actionMark}</span>
+          <div><small>Son hamle</small><strong>{room.lastAction.message}</strong></div>
+        </div>}
       </div>
 
       <aside className="ludo-sidebar ludo-sidebar-right">
-        <div className="dice-console kawaii-card">
-          <div className="dice-console-head"><small>{myTurn?'SIRA SENDE':'ZAR'}</small><div id="ludo-social-dock" className="ludo-social-dock"/></div>
-          <div className={`big-die ${rolling?'rolling':''}`}>{room.dice.length?room.dice.map((die,index)=><span key={`${die}-${index}`}>{DICE[die-1]}</span>):<span>⚄</span>}</div>
+        <div className={`dice-console kawaii-card tone-${consoleColor}`}>
+          <div className="dice-console-head">
+            <div className="ludo-turn-status">
+              <span className={`turn-color-dot ${consoleColor}`}/>
+              <div><strong>{consoleTitle}</strong><small>{consoleDetail}</small></div>
+            </div>
+            <div id="ludo-social-dock" className="ludo-social-dock"/>
+          </div>
+          <div className={`big-die ${displayDice.length>1?'multi':''}`}>
+            {displayDice.map((die,index)=><LudoDie key={`${die}-${index}-${room.turnNumber}`} value={die} color={consoleColor} rolling={rolling} size={displayDice.length>1?'compact':'hero'}/>)}
+          </div>
           {myTurn&&room.phase==='awaiting-roll'&&<button className="ludo-roll-button" disabled={rolling||actionBusy} onClick={roll}><Dices size={20}/>{rolling?'Dönüyor…':'Zarı at'}</button>}
-          {myTurn&&room.phase==='choose-die'&&<div className="choose-dice"><p>Hangisini kullanacaksın?</p>{room.dice.map((die,index)=><button key={`${die}-${index}`} disabled={actionBusy} onClick={()=>chooseDie(die)}>{DICE[die-1]} <b>{die}</b></button>)}</div>}
-          {myTurn&&room.phase==='awaiting-move'&&legal.length>0&&<p className="move-hint">{selectedPawn===null?"✨ Parlayan taşlardan birini seç.":"Parlayan hedef kareye dokunup onayla."}</p>}
+          {myTurn&&room.phase==='choose-die'&&<div className="choose-dice"><p>Hangisini kullanacaksın?</p>{room.dice.map((die,index)=><button key={`${die}-${index}`} disabled={actionBusy} onClick={()=>chooseDie(die)} aria-label={`${die} gelen zarı seç`}><LudoDie value={die} color={me.color} size="mini"/><b>{die}</b></button>)}</div>}
+          {myTurn&&room.phase==='awaiting-move'&&legal.length>0&&<p className="move-hint">{selectedPawn===null?"Parlayan taşlardan birini seç.":"Parlayan hedef kareye dokunup onayla."}</p>}
           {myTurn&&room.phase==='awaiting-move'&&!legal.length&&<button className="secondary-button" disabled={actionBusy} onClick={pass}><RotateCcw size={16}/> Hamle yok · turu geç</button>}
-          {!myTurn&&room.status==='playing'&&<p className="waiting-copy">{turnPlayer?.nickname} zar atıyor…</p>}
         </div>
         {room.chaos.peaceUntilTurn>=room.turnNumber&&<div className="peace-chip"><Shield size={16}/> Barış Turu · yeme kapalı</div>}
         {room.mode==='chaos'&&<div className="chaos-history-mini"><small>KAOS GEÇMİŞİ</small>{room.chaos.history.slice(-3).reverse().map((event)=><span key={event.id}>⚡ {event.title}</span>)}</div>}

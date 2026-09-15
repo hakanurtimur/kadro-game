@@ -481,3 +481,15 @@
   .railAction,
   .mobileDockAction { transition: none; }
 }
+
+
+/* Patch 10 — themed social polish */
+.mobileDockAction{border:1px solid rgba(91,75,104,.10);background:linear-gradient(180deg,#fffdf9,#f4f0f6);color:#655b6d;box-shadow:0 3px 0 #e1dae5,0 7px 14px rgba(71,57,83,.07)}
+.mobileDockAction svg{color:#7569bd;stroke-width:2.2}.mobileDockAction.active{border-color:#cfc7ef;background:linear-gradient(180deg,#f5f1ff,#ebe6ff);color:#5e54a7;box-shadow:0 3px 0 #d6cff0,0 7px 14px rgba(91,76,144,.10)}.mobileDockAction.active svg{color:#6558bb}.unread{background:#e56d70;box-shadow:0 2px 6px rgba(125,63,67,.22)}
+.picker{border:2px solid rgba(102,85,114,.10);background:radial-gradient(circle at 92% 6%,#fff0cf 0 8%,transparent 28%),linear-gradient(180deg,rgba(255,254,250,.99),rgba(248,245,249,.99));box-shadow:0 7px 0 rgba(103,87,116,.07),0 22px 48px rgba(55,42,65,.18)}
+.picker>header strong,.chatHeader strong{letter-spacing:-.015em}.picker>header button,.chatHeader button{border:1px solid rgba(91,75,104,.08);background:#f4f0f5;box-shadow:0 2px 0 #e5dfe8}
+.emojiGrid button,.stickerGrid button{border:1px solid rgba(91,75,104,.09);background:#fffdf9;box-shadow:0 3px 0 #e9e3e8;transition:transform .14s ease,box-shadow .14s ease,background .14s ease}.emojiGrid button:active,.stickerGrid button:active{transform:translateY(2px);box-shadow:0 1px 0 #e9e3e8}.emojiGrid button{background:linear-gradient(180deg,#fffefa,#f8f4f8)}.stickerGrid button{background:linear-gradient(180deg,#fffdf7,#fbf2df)}.stickerGrid img{filter:drop-shadow(0 3px 4px rgba(83,65,54,.10))}
+.burst{border:1px solid rgba(92,77,103,.10);background:rgba(255,253,249,.96);color:#554c5c;box-shadow:0 4px 0 rgba(100,84,112,.07),0 12px 25px rgba(55,42,65,.15);backdrop-filter:blur(12px)}.burstName{color:#877a8d;opacity:1}.burst small{color:#8b7d91;opacity:1}.stickerBurst{border-color:rgba(143,116,75,.10);background:rgba(255,250,239,.97);color:#5d505d}
+.chatSheet{border:2px solid rgba(96,80,108,.10);background:radial-gradient(circle at 88% 3%,#f0ecff 0 8%,transparent 27%),rgba(255,253,249,.99);box-shadow:0 -7px 0 rgba(104,88,117,.06),0 -20px 52px rgba(49,37,59,.22)}.chatHeader{background:rgba(255,253,249,.75);border-bottom:1px solid rgba(91,75,104,.08)}.messages{background:linear-gradient(180deg,rgba(250,247,250,.55),rgba(255,253,249,.25))}.avatar{background:#f0ebf2;box-shadow:inset 0 0 0 1px rgba(91,75,104,.07)}.message p{border:1px solid rgba(91,75,104,.07);background:#f4f1f4;box-shadow:0 2px 0 #e9e3e9}.mine .avatar{background:#e8e2ff;color:#6256ad}.mine p{border-color:#dcd5f4;background:#eeeaff;color:#5b5198;box-shadow:0 2px 0 #ddd6f2}
+.composer{border-top:1px solid rgba(91,75,104,.08);background:rgba(255,253,249,.98)}.composer input{border:1px solid rgba(91,75,104,.11);background:#f7f4f7;box-shadow:inset 0 1px 0 #fff}.composer input:focus{border-color:#aaa0df;box-shadow:0 0 0 3px rgba(126,111,218,.10),inset 0 1px 0 #fff}.composer button{border:1px solid #8175cc;background:#8175d2;box-shadow:0 4px 0 #665ab6,0 8px 14px rgba(92,77,164,.14)}
+@media(hover:hover){.emojiGrid button:hover,.stickerGrid button:hover,.mobileDockAction:hover{transform:translateY(-1px)}}
