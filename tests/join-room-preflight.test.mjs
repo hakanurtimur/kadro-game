@@ -8,7 +8,10 @@ for(const file of ["lib/firebase-store.ts","lib/ludo/firebase-store.ts","lib/tas
     const join=source.slice(source.indexOf("async joinRoom"),source.indexOf("async getRoom"));
     assert.match(join,/await get\(roomRef\)/);
     assert.match(join,/snapshot\.exists\(\)/);
+    assert.match(join,/snapshot\.val\(\)/);
+    assert.match(join,/current\s*\?\?\s*initialRoom/);
     assert.match(join,/applyLocally:\s*false/);
+    assert.doesNotMatch(join,/if\s*\(\s*!current\s*\)\s*return/);
     assert.ok(join.indexOf("await get(roomRef)") < join.indexOf("runTransaction"));
   });
 }

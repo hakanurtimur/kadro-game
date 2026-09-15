@@ -37,9 +37,10 @@ export class FirebaseLudoStore {
     const roomRef = ref(db, `ludoRooms/${normalized}`);
     const snapshot = await get(roomRef);
     if (!snapshot.exists()) throw new Error("Oda bulunamadı.");
+    const initialRoom = snapshot.val();
     const result = await runTransaction(roomRef, (current) => {
-      if (!current) return;
-      return joinLudoPlayer(normalizeLudoState(current), { uid, nickname });
+      const source = current ?? initialRoom;
+      return joinLudoPlayer(normalizeLudoState(source), { uid, nickname });
     }, { applyLocally: false });
     if (!result.committed) {
       const latest = await get(roomRef);
