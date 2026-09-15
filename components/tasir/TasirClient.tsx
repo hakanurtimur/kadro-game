@@ -18,6 +18,7 @@ import { getTasirStore } from "@/lib/tasir/store";
 import { getTasirSoundEnabled, playTasirSfx, setTasirSoundEnabled, unlockTasirAudio } from "@/lib/tasir/sound";
 import type { TasirBoardTile, TasirLastAction, TasirPlayer, TasirRoomState, TasirRpsChoice, TasirTile } from "@/lib/tasir/types";
 import styles from "@/app/tasir/tasir.module.css";
+import GameSocial from "@/components/social/GameSocial";
 
 const RPS:Array<{value:TasirRpsChoice;emoji:string;label:string}>=[
   {value:"rock",emoji:"✊",label:"Taş"},
@@ -144,6 +145,7 @@ export default function TasirClient({code}:{code:string}){
 
       {room.status==='finished'&&<div className={styles.winOverlay}><div><span>✦</span><h2>{winner?.nickname} TAŞIR!</h2><p>Beş hedef hattını da kendi sembolüyle 4/4 tamamladı.</p><button onClick={()=>router.push('/tasir')}><RotateCcw size={16}/> Yeni oda</button></div></div>}
     </section>}
+    <GameSocial game="tasir" code={code} participant={{uid:actorUid,nickname:me.nickname,role:"player"}}/>
     {toast&&<button className={styles.toast} onClick={()=>setToast("")}>{toast}</button>}
   </main>;
 }

@@ -39,11 +39,17 @@ export class FirebaseGameStore {
     const uid = await this.identity();
     const { db } = await getFirebaseServices();
     const roomRef = ref(db, `rooms/${normalizedCode}`);
+    const snapshot = await get(roomRef);
+    if (!snapshot.exists()) throw new Error("Oda bulunamadı.");
     const result = await runTransaction(roomRef, (current) => {
-      if (!current) throw new Error("Oda bulunamadı.");
+      if (!current) return;
       return joinPlayer(normalizeRoomState(current), { uid, nickname });
-    });
-    if (!result.committed) throw new Error("Odaya katılınamadı.");
+    }, { applyLocally: false });
+    if (!result.committed) {
+      const latest = await get(roomRef);
+      if (!latest.exists()) throw new Error("Oda bulunamadı.");
+      throw new Error("Odaya katılınamadı.");
+    }
     return { room: normalizeRoomState(result.snapshot.val()), uid };
   }
 

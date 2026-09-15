@@ -23,6 +23,7 @@ import CharacterCard, { CharacterProfile, TableView } from "@/components/Charact
 import ResultShow from "@/components/ResultShow";
 import SeriesBoard, { SeriesPicker } from "@/components/SeriesBoard";
 import { useTableExperience, ExperienceControls } from "@/components/TableExperience";
+import GameSocial from "@/components/social/GameSocial";
 import { stageHelp } from "@/lib/game-guide";
 import { sceneTheme } from "@/lib/presentation";
 import { ChaosBanner, ChaosHistory, ModePicker } from "@/components/ChaosMode";
@@ -547,6 +548,8 @@ export default function RoomClient({ code }: { code: string }) {
       )}
 
       {room.status === "results" && <ResultShow room={room} isModerator={isHost} busy={busy} now={now} onJudge={runJudge} onAdvance={step=>moderatorAction((r,a,at)=>advancePresentation(r,a,step,at))} onNext={()=>moderatorAction(nextSeriesRound)} onRematch={()=>moderatorAction(resetSeries)}/>}
+
+      {uid && (me || isHost) && <GameSocial game="kadro" code={code} participant={{ uid, nickname: isHost ? room.moderator?.nickname ?? "Moderatör" : me?.nickname ?? "Oyuncu", role: isHost ? "moderator" : "player" }} />}
 
       {toast && <button role="status" className="toast" onClick={() => setToast("")}>{toast}</button>}
     </main>
