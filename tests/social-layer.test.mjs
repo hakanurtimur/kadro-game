@@ -17,15 +17,25 @@ test("shared social layer is integrated into all three games",()=>{
   assert.match(room,/role:\s*isHost\s*\?\s*"moderator"/);
 });
 
-test("mobile-first rail and chat sheet exist without board reflow",()=>{
-  assert.match(social,/QUICK_REACTIONS/);
+test("mobile social controls dock outside game boards while desktop keeps the rail",()=>{
+  assert.match(social,/createPortal/);
+  assert.match(social,/mobileDockId/);
+  assert.match(social,/mobileDockControls/);
   assert.match(social,/MessageCircle/);
   assert.match(social,/maxLength=\{160\}/);
-  assert.match(css,/position:\s*fixed/);
-  assert.match(css,/env\(safe-area-inset-right\)/);
-  assert.match(css,/62dvh|64dvh/);
-  assert.match(css,/min-width:\s*42px|min-width:\s*44px/);
+  assert.match(css,/@media \(max-width:\s*759px\)[\s\S]*?\.rail\s*\{\s*display:\s*none/);
+  assert.match(css,/\.mobileDockControls/);
   assert.match(css,/pointer-events:\s*none/);
+
+  assert.match(ludo,/id="ludo-social-dock"/);
+  assert.match(ludo,/mobileDockId="ludo-social-dock"/);
+  assert.match(ludo,/dice-console-head/);
+
+  assert.match(room,/id="kadro-social-dock"/);
+  assert.match(room,/mobileDockId="kadro-social-dock"/);
+
+  assert.match(tasir,/id="tasir-social-dock"/);
+  assert.match(tasir,/mobileDockId="tasir-social-dock"/);
 });
 
 test("reaction catalog contains standard emoji plus full Hako Baba pack",()=>{

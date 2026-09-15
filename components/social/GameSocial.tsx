@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { CSSProperties, FormEvent, KeyboardEvent } from "react";
 import { MessageCircle, Send, Smile, X } from "lucide-react";
 import { getSocialStore } from "@/lib/social/store";
@@ -16,10 +17,12 @@ export default function GameSocial({
   game,
   code,
   participant,
+  mobileDockId,
 }: {
   game: SocialGame;
   code: string;
   participant: SocialParticipant;
+  mobileDockId?: string;
 }) {
   const store = useMemo(() => getSocialStore(), []);
   const [messages, setMessages] = useState<SocialMessage[]>([]);
@@ -29,6 +32,7 @@ export default function GameSocial({
   const [sending, setSending] = useState(false);
   const [unread, setUnread] = useState(0);
   const [bursts, setBursts] = useState<SocialReaction[]>([]);
+  const [mobileDockNode, setMobileDockNode] = useState<HTMLElement | null>(null);
   const chatOpenRef = useRef(false);
   const knownMessages = useRef(new Set<string>());
   const messagesInitialized = useRef(false);
@@ -40,6 +44,18 @@ export default function GameSocial({
   const uid = participant.uid;
   const nickname = participant.nickname;
   const role = participant.role;
+
+  useEffect(() => {
+    if (!mobileDockId) {
+      setMobileDockNode(null);
+      return;
+    }
+    const syncDock = () => setMobileDockNode(document.getElementById(mobileDockId));
+    syncDock();
+    const observer = new MutationObserver(syncDock);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [mobileDockId]);
 
   useEffect(() => {
     chatOpenRef.current = chatOpen;
@@ -121,6 +137,7 @@ export default function GameSocial({
     if (now - lastReactionAt.current < REACTION_COOLDOWN_MS) return;
     lastReactionAt.current = now;
     await store.sendReaction(game, code, { uid, nickname, role }, reactionId).catch(() => {});
+    setPickerOpen(false);
   }
 
   function handleComposerKey(event: KeyboardEvent<HTMLInputElement>) {
@@ -129,7 +146,37 @@ export default function GameSocial({
     void sendMessage();
   }
 
+  const mobileDock = mobileDockNode ? createPortal(
+    <div className={styles.mobileDockControls} aria-label="Tepkiler ve chat">
+      <button
+        type="button"
+        className={`${styles.mobileDockAction} ${pickerOpen ? styles.active : ""}`}
+        aria-label="Tepkileri aç"
+        aria-expanded={pickerOpen}
+        onClick={() => {
+          setPickerOpen((value) => !value);
+          setChatOpen(false);
+        }}
+      ><Smile size={20}/><span>Tepki</span></button>
+      <button
+        type="button"
+        className={`${styles.mobileDockAction} ${styles.chatButton} ${chatOpen ? styles.active : ""}`}
+        aria-label="Chat'i aç"
+        aria-expanded={chatOpen}
+        onClick={() => {
+          setChatOpen(true);
+          setPickerOpen(false);
+        }}
+      >
+        <MessageCircle size={20}/><span>Chat</span>
+        {unread > 0 && <b className={styles.unread}>{unread > 9 ? "9+" : unread}</b>}
+      </button>
+    </div>,
+    mobileDockNode
+  ) : null;
+
   return <div className={styles.root}>
+    {mobileDock}
     <div className={styles.stream} aria-live="polite" aria-atomic="false">
       {bursts.map((burst, index) => <ReactionBurst key={burst.id} reaction={burst} index={index}/>)}
     </div>

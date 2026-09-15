@@ -382,6 +382,7 @@ export default function RoomClient({ code }: { code: string }) {
       </header>
 
       <div className="table-toolbar"><div className="moderator-badge"><PolyAvatar seed={room.hostUid} size={30}/><b>{host?.nickname || "Moderatör"}</b><span>masayı yönetiyor · oynamıyor</span></div><GameGuide/><ExperienceControls experience={experience}/></div>
+      <div className="kadro-social-bar"><div id="kadro-social-dock"/></div>
       <p className="stage-help" role="status">{stageHelp(room)}</p>
       {room.schemaVersion !== 2 && <div className="legacy-notice">Bu oda önceki sürüme ait. Moderatör ve turnuva özellikleri için ana sayfadan yeni oda oluştur.</div>}
       {room.status !== "results" && <SeriesBoard room={room}/>}
@@ -549,7 +550,7 @@ export default function RoomClient({ code }: { code: string }) {
 
       {room.status === "results" && <ResultShow room={room} isModerator={isHost} busy={busy} now={now} onJudge={runJudge} onAdvance={step=>moderatorAction((r,a,at)=>advancePresentation(r,a,step,at))} onNext={()=>moderatorAction(nextSeriesRound)} onRematch={()=>moderatorAction(resetSeries)}/>}
 
-      {uid && (me || isHost) && <GameSocial game="kadro" code={code} participant={{ uid, nickname: isHost ? room.moderator?.nickname ?? "Moderatör" : me?.nickname ?? "Oyuncu", role: isHost ? "moderator" : "player" }} />}
+      {uid && (me || isHost) && <GameSocial game="kadro" code={code} participant={{ uid, nickname: isHost ? room.moderator?.nickname ?? "Moderatör" : me?.nickname ?? "Oyuncu", role: isHost ? "moderator" : "player" }} mobileDockId="kadro-social-dock" />}
 
       {toast && <button role="status" className="toast" onClick={() => setToast("")}>{toast}</button>}
     </main>

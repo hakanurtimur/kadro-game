@@ -23,7 +23,8 @@
   pointer-events: auto;
 }
 .quickReaction,
-.railAction {
+.railAction,
+.mobileDockAction {
   width: 44px;
   height: 44px;
   min-width: 44px;
@@ -41,12 +42,33 @@
   transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
 }
 .quickReaction:active,
-.railAction:active { transform: scale(.92); }
+.railAction:active,
+.mobileDockAction:active { transform: scale(.92); }
 .quickReaction > span { font-size: 23px; line-height: 1; }
 .quickSticker { overflow: hidden; background: #fff8e9; }
 .quickSticker img { width: 40px; height: 40px; object-fit: contain; pointer-events: none; }
-.railAction.active { background: #ebe6ff; color: #6557ca; box-shadow: inset 0 0 0 2px #8b7ce4; }
+.railAction.active,
+.mobileDockAction.active { background: #ebe6ff; color: #6557ca; box-shadow: inset 0 0 0 2px #8b7ce4; }
 .chatButton { position: relative; }
+.mobileDockControls {
+  display: none;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  pointer-events: auto;
+}
+.mobileDockAction {
+  width: auto;
+  min-width: 58px;
+  height: 42px;
+  min-height: 42px;
+  padding: 0 10px;
+  gap: 6px;
+  border-radius: 13px;
+  font-size: 9px;
+  font-weight: 900;
+}
+.mobileDockAction > span { line-height: 1; }
 .unread {
   position: absolute;
   right: -5px;
@@ -361,6 +383,7 @@
 }
 
 @media (min-width: 760px) {
+  .mobileDockControls { display: none; }
   .rail { right: 16px; }
   .picker { right: 78px; }
   .chatSheet {
@@ -373,6 +396,30 @@
   .dismiss { background: transparent; backdrop-filter: none; }
 }
 
+@media (max-width: 759px) {
+  .rail { display: none; }
+  .mobileDockControls { display: flex; }
+
+  .picker {
+    top: auto;
+    left: max(8px, env(safe-area-inset-left));
+    right: max(8px, env(safe-area-inset-right));
+    bottom: max(10px, env(safe-area-inset-bottom));
+    width: auto;
+    max-height: min(58dvh, 520px);
+    transform: none;
+    padding: 14px;
+    border-radius: 24px;
+  }
+
+  .stream {
+    top: 15%;
+    right: max(8px, env(safe-area-inset-right));
+    width: min(150px, calc(100vw - 24px));
+    pointer-events: none;
+  }
+}
+
 @media (max-width: 430px) {
   .rail {
     right: max(5px, env(safe-area-inset-right));
@@ -381,21 +428,30 @@
     border-radius: 18px;
   }
   .quickReaction,
-  .railAction {
-    width: 42px;
+  .railAction,
+  .mobileDockAction {
     height: 42px;
-    min-width: 42px;
     min-height: 42px;
     border-radius: 13px;
+  }
+  .quickReaction,
+  .railAction {
+    width: 42px;
+    min-width: 42px;
+  }
+  .mobileDockAction {
+    min-width: 54px;
+    padding-inline: 9px;
   }
   .quickReaction > span { font-size: 21px; }
   .quickSticker img { width: 38px; height: 38px; }
   .picker {
     top: auto;
-    right: max(58px, calc(env(safe-area-inset-right) + 56px));
-    bottom: max(12px, env(safe-area-inset-bottom));
-    width: min(310px, calc(100vw - 68px));
-    max-height: 72dvh;
+    left: max(5px, env(safe-area-inset-left));
+    right: max(5px, env(safe-area-inset-right));
+    bottom: max(5px, env(safe-area-inset-bottom));
+    width: auto;
+    max-height: 58dvh;
     transform: none;
     padding: 13px;
     border-radius: 22px;
@@ -403,8 +459,8 @@
   .emojiGrid { grid-template-columns: repeat(3, minmax(0,1fr)); }
   .stickerGrid { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .stream {
-    right: max(56px, calc(env(safe-area-inset-right) + 54px));
-    width: min(150px, calc(100vw - 70px));
+    right: max(5px, env(safe-area-inset-right));
+    width: min(145px, calc(100vw - 18px));
   }
   .stickerBurst img { width: 76px; height: 68px; }
   .chatSheet {
@@ -422,5 +478,6 @@
   .burst,
   .chatSheet { animation: none !important; }
   .quickReaction,
-  .railAction { transition: none; }
+  .railAction,
+  .mobileDockAction { transition: none; }
 }

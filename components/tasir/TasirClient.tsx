@@ -115,6 +115,7 @@ export default function TasirClient({code}:{code:string}){
         <button onClick={()=>{void unlockTasirAudio();navigator.clipboard?.writeText(code);setToast("Oda kodu kopyalandı.");}}><Copy size={14}/> {code}</button>
       </div>
     </header>
+    <div className={styles.socialBar}><div id="tasir-social-dock"/></div>
 
     {room.status==='lobby'&&<section className={styles.lobby}><div className={styles.centerCard}>
       <span className={styles.chip}>TAŞIR · LOBİ</span><h1>Rakibini bekle</h1>
@@ -145,7 +146,7 @@ export default function TasirClient({code}:{code:string}){
 
       {room.status==='finished'&&<div className={styles.winOverlay}><div><span>✦</span><h2>{winner?.nickname} TAŞIR!</h2><p>Beş hedef hattını da kendi sembolüyle 4/4 tamamladı.</p><button onClick={()=>router.push('/tasir')}><RotateCcw size={16}/> Yeni oda</button></div></div>}
     </section>}
-    <GameSocial game="tasir" code={code} participant={{uid:actorUid,nickname:me.nickname,role:"player"}}/>
+    <GameSocial game="tasir" code={code} participant={{uid:actorUid,nickname:me.nickname,role:"player"}} mobileDockId="tasir-social-dock"/>
     {toast&&<button className={styles.toast} onClick={()=>setToast("")}>{toast}</button>}
   </main>;
 }

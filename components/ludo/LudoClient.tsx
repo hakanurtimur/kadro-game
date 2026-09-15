@@ -133,7 +133,7 @@ export default function LudoClient({ code }: { code:string }) {
 
     {room.status==='lobby' && <section className="ludo-lobby-wrap">
       <div className="ludo-lobby-card kawaii-card">
-        <div className="section-kicker"><Users size={16}/> OYUNCULAR TOPLANIYOR</div>
+        <div className="ludo-social-heading-row"><div className="section-kicker"><Users size={16}/> OYUNCULAR TOPLANIYOR</div><div id="ludo-social-dock" className="ludo-social-dock"/></div>
         <h1>Klasik masa hazır.</h1>
         <p>Host da oyuncu. 2–4 kişi tamamlanınca oyunu başlat.</p>
         <div className="ludo-player-list">
@@ -170,7 +170,7 @@ export default function LudoClient({ code }: { code:string }) {
 
       <aside className="ludo-sidebar ludo-sidebar-right">
         <div className="dice-console kawaii-card">
-          <small>{myTurn?'SIRA SENDE':'ZAR'}</small>
+          <div className="dice-console-head"><small>{myTurn?'SIRA SENDE':'ZAR'}</small><div id="ludo-social-dock" className="ludo-social-dock"/></div>
           <div className={`big-die ${rolling?'rolling':''}`}>{room.dice.length?room.dice.map((die,index)=><span key={`${die}-${index}`}>{DICE[die-1]}</span>):<span>⚄</span>}</div>
           {myTurn&&room.phase==='awaiting-roll'&&<button className="ludo-roll-button" disabled={rolling||actionBusy} onClick={roll}><Dices size={20}/>{rolling?'Dönüyor…':'Zarı at'}</button>}
           {myTurn&&room.phase==='choose-die'&&<div className="choose-dice"><p>Hangisini kullanacaksın?</p>{room.dice.map((die,index)=><button key={`${die}-${index}`} disabled={actionBusy} onClick={()=>chooseDie(die)}>{DICE[die-1]} <b>{die}</b></button>)}</div>}
@@ -184,7 +184,7 @@ export default function LudoClient({ code }: { code:string }) {
     </section>}
 
     {room.status==='finished'&&winner&&<div className="ludo-winner-overlay"><div className={`winner-pawn ${winner.color}`}><span/></div><Sparkles size={28}/><small>KAZANAN</small><h2>{winner.nickname}</h2><p>Dört taş da eve geldi. Masa dağıldı, gurur kaldı.</p><button className="primary-button" onClick={()=>router.push('/ludo')}>Yeni oyun</button></div>}
-    <GameSocial game="ludo" code={code} participant={{uid:actorUid,nickname:me.nickname,role:"player"}}/>
+    <GameSocial game="ludo" code={code} participant={{uid:actorUid,nickname:me.nickname,role:"player"}} mobileDockId="ludo-social-dock"/>
     {toast&&<div className="toast">{toast}</div>}
   </main>;
 }
