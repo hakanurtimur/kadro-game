@@ -85,3 +85,34 @@
 .gamePicker .gameCard h2{font-size:21px;margin:8px 0 6px}
 .gamePicker .gameCard>div .gameEmoji{font-size:28px;line-height:1;color:#9676b5;letter-spacing:0}
 @media(max-width:760px){.gamePicker{max-height:460px}.gamePicker .gameCard{padding:13px}.gamePicker .gameCard h2{font-size:20px}}
+
+/* DÜMBÜK room chrome; live arena geometry and danger states are retained. */
+.home,.room,.loading{color:var(--ink);background:var(--cream)}
+.back,.topbar button{color:var(--ink);background:var(--paper-strong);border:1.5px solid var(--ink);border-radius:8px;box-shadow:2px 2px 0 var(--ink);backdrop-filter:none}
+.hero h1{color:var(--ink);text-shadow:none;letter-spacing:-.04em;line-height:1;font-size:clamp(48px,8vw,90px)}
+.hero>p,.note,.wait,.lobbyMain>p{color:var(--muted)}
+.joinCard,.lobbyMain,.testPanel,.bombStage,.arenaStage{background:var(--paper-strong);border:var(--brand-outline);border-radius:16px;box-shadow:4px 4px 0 var(--ink)}
+.joinCard input{background:#fffef9;border:1.5px solid var(--ink);border-radius:8px;color:var(--ink)}
+.primary{background:var(--brand-acid);color:var(--ink);border:var(--brand-outline);border-radius:9px;box-shadow:3px 3px 0 var(--ink)}
+.secondary,.joinRow button{background:var(--brand-lilac);color:var(--ink);border:1.5px solid var(--ink);border-radius:8px}
+.primary:disabled{opacity:.5}.primary:not(:disabled):active{transform:translateY(2px);box-shadow:1px 1px 0 var(--ink)}
+.eyebrow{color:var(--ink)}
+.playerGrid article{border:1.5px solid var(--ink);border-radius:9px;background:var(--brand-lilac)}
+.playerGrid .me{background:var(--brand-acid);border-color:var(--ink)}
+.playerGrid small,.gameCard p,.gameCard small{color:var(--muted)}
+.gamePicker .gameCard{background:var(--brand-lilac);border:1.5px solid var(--ink);border-radius:10px;box-shadow:2px 2px 0 var(--ink)}
+.gamePicker .selectedGame{background:var(--brand-acid);border-color:var(--ink);box-shadow:3px 3px 0 var(--ink)}
+.gameCard h2,.bombStage h2,.arenaStage h2{color:var(--ink)}
+.instructionRules>div{background:var(--brand-lilac);border:1px solid #19191960;border-radius:8px}
+.instructionRules b,.instructionRules small,.bombStage>p,.arenaStage>p{color:var(--muted)}
+.targetGrid button{background:var(--brand-acid);border:1.5px solid var(--ink);border-radius:9px;box-shadow:2px 3px 0 var(--ink)}
+.targetGrid button>span{background:var(--paper-strong);color:var(--ink);border:1px solid var(--ink);border-radius:8px}
+.targetGrid small{color:var(--muted)}
+.scoreBoard>div,.arenaResults>div{background:var(--brand-lilac);border:1px solid #19191960;border-radius:8px}
+.scoreBoard b,.scoreBoard span{color:var(--ink)}
+.arena{background:#eee8dd;border:var(--brand-outline);border-radius:14px;box-shadow:none}
+.arenaTopline>span{background:var(--brand-acid);color:var(--ink);border:1.5px solid var(--ink);border-radius:8px;box-shadow:2px 2px 0 var(--ink)}
+.home button,.room button{cursor:pointer}.home button:disabled,.room button:disabled{cursor:default}
+@media(max-width:760px){.home{padding-top:88px}.hero h1{font-size:52px}.bombStage,.arenaStage{box-shadow:2px 3px 0 var(--ink)}}
+.hero h1 em{color:var(--ink);text-decoration:underline;text-decoration-color:var(--brand-acid);text-decoration-thickness:7px;text-underline-offset:2px}
+.heroBomb{background:var(--brand-peach);border:var(--brand-outline);border-radius:14px;box-shadow:4px 4px 0 var(--ink);color:var(--ink)}

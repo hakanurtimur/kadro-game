@@ -20,7 +20,7 @@ export default function LudoHome(){
   async function join(){if(!nickname.trim()||!roomCode.trim())return setError('Nickname ve oda kodu lazım.');setLoading(true);setError('');try{const {room}=await store.joinRoom(roomCode,nickname);router.push(`/ludo/${room.code}`);}catch(e){setError(e instanceof Error?e.message:'Odaya girilemedi.');}finally{setLoading(false);}}
 
   return <main className="ludo-home-shell">
-    <div className="soft-grid"/><button className="back-to-games" onClick={()=>router.push('/')}><ArrowLeft size={16}/> DÜMBÜK · Oyunlar</button>
+    <div className="soft-grid"/><button className="back-to-games" onClick={()=>router.push('/')}><ArrowLeft size={16}/> <img className="brand-back-mark" src="/brand/mascot.svg" width="26" height="27" alt=""/> DÜMBÜK · Oyunlar</button>
     <section className="ludo-home-hero"><span className="brand-chip"><Dices size={16}/> klasik masa oyunu</span><h1>Kızma <em>Birader</em></h1><p>4 taşını avludan çıkar, rakibini eve yolla, tam zarla bitişe gir. Kaosu açarsan masa biraz karışır.</p><div className="ludo-hero-pawns" aria-hidden="true"><i className="red"/><i className="green"/><i className="yellow"/><i className="blue"/></div><LudoGuide/></section>
     <section className="join-card kawaii-card ludo-join-card">
       <div className="mode-row"><span className="tiny-label">2–4 OYUNCU</span><span className={`mode-badge ${store.mode}`}>{store.mode==='firebase'?'● ONLINE':'● LOCAL'}</span></div>

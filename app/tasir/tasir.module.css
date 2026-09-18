@@ -42,3 +42,31 @@
   .socialBar>div{pointer-events:auto}
 }
 
+
+/* DÜMBÜK: drawn tabletop, with original tile motion and input geometry. */
+.home,.room{color:var(--ink);background:var(--cream)}
+.back,.topbar button{background:var(--paper-strong);border:1.5px solid var(--ink);border-radius:8px;box-shadow:2px 2px 0 var(--ink);color:var(--ink);backdrop-filter:none}
+.hero h1{font-size:clamp(64px,10vw,96px);letter-spacing:-.04em;line-height:1;color:var(--ink);text-shadow:4px 4px 0 var(--brand-mint)}
+.hero>p,.note,.centerCard p,.flow p{color:var(--muted)}
+.chip{background:var(--brand-mint);color:var(--ink);border:1.5px solid var(--ink);border-radius:3px;transform:rotate(-2deg)}
+.joinCard,.centerCard,.boardCard{border:var(--brand-outline);background:var(--paper-strong);border-radius:14px;box-shadow:4px 4px 0 var(--ink)}
+.joinCard input{border:1.5px solid var(--ink);border-radius:8px;background:#fffef9;color:var(--ink)}
+.primary{color:var(--ink)!important;background:var(--brand-acid)!important;border:2px solid var(--ink)!important;border-radius:9px!important;box-shadow:3px 3px 0 var(--ink)}
+.primary:disabled{opacity:.5}.primary:not(:disabled):active{transform:translateY(2px);box-shadow:1px 1px 0 var(--ink)}
+.joinRow button,.centerCard button{border:1.5px solid var(--ink);border-radius:8px;background:var(--brand-mint);color:var(--ink)}
+.seat{border-color:#19191980;border-radius:9px}.seat.filled{background:var(--brand-mint);border-color:var(--ink)}
+.seat small,.modeRow em,.or,.boardHeader small,.flow p{color:var(--muted)}
+.rpsChoices button{background:var(--brand-lilac);border:var(--brand-outline);border-radius:10px;box-shadow:2px 2px 0 var(--ink)}
+.statusStrip{border:1.5px solid var(--ink);border-radius:10px;background:var(--paper-strong)}
+.statusStrip small,.boardHeader span{color:var(--muted)}
+.held{background:var(--brand-lilac);border:1.5px solid var(--ink);border-radius:8px;box-shadow:2px 2px 0 var(--ink)}
+.activeBoard{border-color:var(--ink);box-shadow:0 0 0 3px var(--brand-acid),4px 4px 0 var(--ink)}
+.tileBack,.miniBoard i{background:#e9e0fa;color:var(--ink);border:1.5px solid var(--ink);box-shadow:0 3px 0 var(--ink);border-radius:7px}
+.miniBoard i:nth-child(3n){background:var(--brand-peach);box-shadow:0 3px 0 var(--ink)}
+.tileBack span{opacity:.65}.tileFront{background:#ffedba;color:var(--ink);border:1.5px solid var(--ink);box-shadow:0 3px 0 var(--ink);text-shadow:none;border-radius:7px}
+.columnButtons button{background:var(--brand-lilac);color:var(--ink);border:1px solid var(--ink);border-radius:7px}
+.columnButtons .legalColumn{background:var(--brand-acid);color:var(--ink);box-shadow:0 3px 0 var(--ink)}
+.winOverlay>div{background:var(--paper-strong);border:var(--brand-outline);border-radius:16px;box-shadow:5px 5px 0 var(--ink)}
+.winOverlay button{background:var(--brand-acid);color:var(--ink);border:var(--brand-outline);border-radius:8px}
+.home button,.room button{cursor:pointer}.home button:disabled,.room button:disabled{cursor:default}
+@media(max-width:760px){.home{padding-top:88px}.hero h1{font-size:64px}.boardCard{box-shadow:2px 3px 0 var(--ink)}}

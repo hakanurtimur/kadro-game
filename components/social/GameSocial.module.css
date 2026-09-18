@@ -493,3 +493,14 @@
 .chatSheet{border:2px solid rgba(96,80,108,.10);background:radial-gradient(circle at 88% 3%,#f0ecff 0 8%,transparent 27%),rgba(255,253,249,.99);box-shadow:0 -7px 0 rgba(104,88,117,.06),0 -20px 52px rgba(49,37,59,.22)}.chatHeader{background:rgba(255,253,249,.75);border-bottom:1px solid rgba(91,75,104,.08)}.messages{background:linear-gradient(180deg,rgba(250,247,250,.55),rgba(255,253,249,.25))}.avatar{background:#f0ebf2;box-shadow:inset 0 0 0 1px rgba(91,75,104,.07)}.message p{border:1px solid rgba(91,75,104,.07);background:#f4f1f4;box-shadow:0 2px 0 #e9e3e9}.mine .avatar{background:#e8e2ff;color:#6256ad}.mine p{border-color:#dcd5f4;background:#eeeaff;color:#5b5198;box-shadow:0 2px 0 #ddd6f2}
 .composer{border-top:1px solid rgba(91,75,104,.08);background:rgba(255,253,249,.98)}.composer input{border:1px solid rgba(91,75,104,.11);background:#f7f4f7;box-shadow:inset 0 1px 0 #fff}.composer input:focus{border-color:#aaa0df;box-shadow:0 0 0 3px rgba(126,111,218,.10),inset 0 1px 0 #fff}.composer button{border:1px solid #8175cc;background:#8175d2;box-shadow:0 4px 0 #665ab6,0 8px 14px rgba(92,77,164,.14)}
 @media(hover:hover){.emojiGrid button:hover,.stickerGrid button:hover,.mobileDockAction:hover{transform:translateY(-1px)}}
+
+/* Shared DÜMBÜK social chrome, preserving dock placement and touch targets. */
+.rail{background:var(--paper-strong);border:1.5px solid var(--ink);border-radius:12px;box-shadow:3px 3px 0 var(--ink);backdrop-filter:none}
+.quickReaction,.railAction,.mobileDockAction{background:var(--brand-lilac);color:var(--ink);border:1px solid var(--ink);border-radius:8px;box-shadow:none}
+.railAction.active,.mobileDockAction.active{background:var(--brand-acid);color:var(--ink);box-shadow:1px 2px 0 var(--ink)}
+.composer{background:var(--paper-strong);border-top:1px solid var(--ink)}
+.composer input{background:#fffef9;color:var(--ink);border:1.5px solid var(--ink);border-radius:8px}
+.composer button{background:var(--brand-acid);color:var(--ink);border:1.5px solid var(--ink);border-radius:8px}
+.chatSheet,.picker{background:var(--paper-strong);color:var(--ink);border:var(--brand-outline);border-radius:14px;box-shadow:4px 4px 0 var(--ink)}
+.chatHeader{background:var(--brand-lilac);border-bottom:1px solid var(--ink)}
+.messageMeta,.emptyChat{color:var(--muted)}

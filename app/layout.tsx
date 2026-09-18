@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./party-upgrade.css";
+import "./dumbuk-games.css";
 
 
 export const viewport: Viewport = {

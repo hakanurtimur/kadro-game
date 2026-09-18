@@ -1,0 +1,57 @@
+/* Shared DÜMBÜK game chrome. Board geometry, player colors and input behavior stay local. */
+:root{--ink:#191919;--muted:#58534d;--cream:#fffbef;--paper:#fffdf5;--paper-strong:#fffdf5;--line:#19191940;--brand-acid:#dafa28;--brand-lilac:#e9e0fa;--brand-peach:#ffdeca;--brand-mint:#d9eee1;--brand-outline:2px solid #191919;--shadow:5px 5px 0 #191919;--soft-shadow:3px 3px 0 #191919;--radius-xl:18px;--radius-lg:14px;--radius-md:10px}
+body{background:var(--cream)}
+:is(.home-shell,.ludo-home-shell,.room-shell,.ludo-room-shell,.loading-screen){background:var(--cream);color:var(--ink)}
+.soft-grid{opacity:.2;background-size:28px 28px}
+:is(.kawaii-card,.ludo-board-wrap,.guide-dialog,.ludo-chaos-card){border:var(--brand-outline);background:var(--paper-strong);box-shadow:var(--shadow);backdrop-filter:none;border-radius:16px}
+:is(.home-hero,.ludo-home-hero) h1{color:var(--ink);text-shadow:none;letter-spacing:-.04em;line-height:.98;font-size:clamp(48px,8vw,96px)}
+.home-hero h1 span,.ludo-home-hero h1 em{color:var(--ink);text-decoration:underline;text-decoration-color:var(--brand-acid);text-decoration-thickness:9px;text-underline-offset:2px}
+:is(.home-hero,.ludo-home-hero)>p{color:var(--muted)}
+:is(.brand-chip,.section-kicker){color:var(--ink)}
+.brand-chip{background:var(--brand-lilac);border:1.5px solid var(--ink);border-radius:3px;transform:rotate(-2deg)}
+:is(.back-to-games,.ludo-back,.ludo-guide-button,.room-code,.guide-trigger,.experience-controls button,.secondary-button,.ludo-sound-toggle){color:var(--ink);background:var(--paper-strong);border:1.5px solid var(--ink);border-radius:8px;box-shadow:2px 2px 0 var(--ink);backdrop-filter:none;min-height:40px}
+.brand-back-mark{width:26px;height:27px;object-fit:contain;flex-shrink:0}
+.primary-button,.primary-button.ludo-primary{color:var(--ink);background:var(--brand-acid)!important;border:2px solid var(--ink);border-radius:9px;box-shadow:3px 4px 0 var(--ink)}
+.primary-button:hover:not(:disabled){background:#e4f96b!important;filter:none;box-shadow:4px 5px 0 var(--ink);transform:translateY(-1px)}
+.primary-button:active:not(:disabled){transform:translateY(2px);box-shadow:1px 2px 0 var(--ink)}
+.primary-button:disabled{opacity:.5;filter:grayscale(.6)}
+:is(.join-card,.ludo-join-card) input{background:#fffef9;border:1.5px solid var(--ink);border-radius:8px;color:var(--ink)}
+input::placeholder{color:#716a62}
+:is(button,a,input,select):focus-visible{outline:3px solid #6946ba;outline-offset:4px}
+:is(.ludo-create-mode,.ludo-mode-picker) button,.series-picker button{border:1.5px solid var(--ink);border-radius:9px;background:var(--paper-strong);color:var(--ink)}
+:is(.ludo-create-mode,.ludo-mode-picker) button.active,.series-picker button[aria-pressed="true"]{background:var(--brand-acid);border-color:var(--ink);color:var(--ink);box-shadow:2px 2px 0 var(--ink)}
+.moderator-create-note{background:var(--brand-lilac);border-left:3px solid var(--ink);border-radius:4px}
+:is(.player-tile,.ludo-player-card,.ludo-empty-seat,.empty-player){border-color:var(--ink);border-radius:10px;background:var(--paper-strong)}
+:is(.empty-player,.ludo-empty-seat){background:transparent;color:#726959;border-style:dashed}
+:is(.lobby-main,.ludo-lobby-card){position:relative}
+:is(.lobby-main,.ludo-lobby-card)::after{content:"";display:block;width:62px;height:64px;background:url('/brand/mascot.svg') center/contain no-repeat;margin:24px auto 0;pointer-events:none}
+:is(.ludo-player-card small,.ludo-turn-card small,.ludo-turn-card p,.ludo-score-row small,.waiting-copy,.chaos-lobby-copy,.ludo-mode-description){color:var(--muted)}
+.ludo-board-wrap{border-radius:16px;background:var(--paper-strong)}
+.ludo-board{background:#d7d0bf;border-radius:10px}
+.ludo-yard-zone{border:1.5px solid #19191990;border-radius:10px;box-shadow:inset 0 0 0 7px #fff7}
+.ludo-cell{border-color:#19191935;border-radius:3px}
+.ludo-turn-card{background:var(--brand-lilac)}
+.ludo-score-row{border:1px solid #19191965;border-radius:8px;background:var(--paper-strong)}
+.ludo-score-row.turn{background:var(--brand-acid);box-shadow:2px 2px 0 var(--ink);transform:none}
+.ludo-chaos-card{background:var(--brand-peach)}.ludo-chaos-card.global{background:var(--brand-mint);border-color:var(--ink)}
+:is(.ludo-chaos-card p,.ludo-chaos-card small){color:var(--muted)}
+:is(.auction-stage,.scenario-card,.rubric-card,.series-board){border-radius:14px}
+:is(.standings>div,.rubric-grid article){background:var(--brand-lilac);border:1px solid #19191955;border-radius:8px}
+.standings .series-champion{background:var(--brand-acid);box-shadow:2px 2px 0 var(--ink)}
+.guide-close{color:var(--ink);background:var(--brand-acid);border:1px solid var(--ink)}
+.guide-sheet section{border-color:var(--line)}
+@media(max-width:760px){.back-to-games{top:16px;left:16px}.brand-back-mark{width:23px;height:24px}.ludo-board-wrap{box-shadow:3px 3px 0 var(--ink)}.home-shell,.ludo-home-shell{padding-top:88px}}
+@media(prefers-reduced-motion:reduce){.primary-button{transition:none}.brand-chip{transform:none}}
+.result-card.winner{border-color:var(--ink);background:#f2f6c8;box-shadow:5px 5px 0 var(--ink)}
+.result-card.winner .score-bubble{background:var(--brand-acid);color:var(--ink);box-shadow:2px 3px 0 var(--ink)}
+.winner-crown{background:var(--brand-acid);color:var(--ink);border:1px solid var(--ink);border-radius:5px}
+:is(.results-heading p,.result-player small,.result-roster span){color:var(--muted)}
+:is(.lobby-main h2,.preview-heading h2,.rps-card h2,.leftover-head h2,.results-heading h2){letter-spacing:-.035em}
+.ludo-lobby-card h1{color:var(--ink)}
+.ludo-sound-toggle[aria-pressed="true"]{background:var(--brand-acid);color:var(--ink);border-color:var(--ink)}
+@media(max-width:780px){.ludo-topbar{grid-template-columns:auto 1fr auto}.ludo-topbar .room-code{justify-self:center}}
+.ludo-roll-button,.bid-controls .all-in{background:var(--brand-acid);color:var(--ink);border:var(--brand-outline);border-radius:9px;box-shadow:3px 3px 0 var(--ink)}
+.ludo-roll-button:active:not(:disabled){box-shadow:1px 1px 0 var(--ink)}
+.bid-controls button,.choose-dice button{border:1.5px solid var(--ink);border-radius:8px;background:var(--paper-strong);color:var(--ink);box-shadow:2px 2px 0 var(--ink)}
+.bid-controls .all-in{background:var(--brand-acid)}
+.ludo-roll-button:disabled{opacity:.5}
