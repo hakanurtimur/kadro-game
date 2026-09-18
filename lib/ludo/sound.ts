@@ -11,6 +11,29 @@ let enabled = true;
 let audioContext: AudioContext | null = null;
 let primedContext: AudioContext | null = null;
 
+// Safari exposes this experimental API; other browsers use normal Web Audio.
+type PlaybackSession = { type: string };
+let ownedSession: PlaybackSession | null = null;
+let previousSessionType = "auto";
+function requestPlaybackSession() {
+  try {
+    const session = (window.navigator as Navigator & { audioSession?: PlaybackSession })?.audioSession;
+    if (!session || ownedSession === session || session.type === "play-and-record") return;
+    const previous = session.type;
+    session.type = "playback";
+    ownedSession = session;
+    previousSessionType = previous;
+  } catch { /* AudioSession is optional, including when its setter rejects. */ }
+}
+
+export function releaseLudoAudio() {
+  try {
+    if (ownedSession?.type === "playback") ownedSession.type = previousSessionType;
+  } catch { /* A platform session change must not break room cleanup. */ }
+  ownedSession = null;
+  if (audioContext?.state === "running") void audioContext.suspend().catch(() => {});
+}
+
 export function getLudoSoundEnabled() {
   if (typeof window === "undefined") return true;
   try {
@@ -27,7 +50,7 @@ export function setLudoSoundEnabled(value: boolean) {
   if (typeof window !== "undefined") {
     try { window.localStorage.setItem(LUDO_SOUND_STORAGE_KEY, value ? "on" : "off"); } catch {}
   }
-  if (!value && audioContext?.state === "running") void audioContext.suspend().catch(() => {});
+  if (!value) releaseLudoAudio();
 }
 
 function getAudioContext() {
@@ -55,6 +78,7 @@ function primeContext(ctx: AudioContext) {
 
 async function ensureRunningAudioContext() {
   if (!enabled || typeof window === "undefined") return null;
+  requestPlaybackSession();
   let ctx=getAudioContext();
   if(!ctx)return null;
 
@@ -163,6 +187,6 @@ export async function unlockLudoAudio() {
 export function playLudoSfx(effect: LudoSfx, options: LudoSfxOptions = {}) {
   if (!enabled || typeof window === "undefined") return;
   void ensureRunningAudioContext().then((ctx)=>{
-    if(ctx)scheduleEffect(ctx,effect,options);
+    if(ctx && enabled && ctx.state === "running")scheduleEffect(ctx,effect,options);
   }).catch(()=>{});
 }

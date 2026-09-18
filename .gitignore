@@ -9,3 +9,7 @@ node_modules
 .test-cjs
 
 *firebase-adminsdk*.json
+
+# Local design explorations and incremental compiler cache
+/output/
+*.tsbuildinfo

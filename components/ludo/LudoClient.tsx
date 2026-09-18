@@ -10,7 +10,7 @@ import LudoDie from "./LudoDie";
 import GameSocial from "@/components/social/GameSocial";
 import { chooseLudoDie, setLudoColor, leaveLudoPlayer, finishNoMove, legalPawnMoves, moveLudoPawn, previewLudoPawnMove, rollLudoDice, setLudoMode, startLudoGame } from "@/lib/ludo/engine";
 import { getLudoStore } from "@/lib/ludo/store";
-import { getLudoSoundEnabled, playLudoSfx, setLudoSoundEnabled, unlockLudoAudio } from "@/lib/ludo/sound";
+import { getLudoSoundEnabled, releaseLudoAudio, playLudoSfx, setLudoSoundEnabled, unlockLudoAudio } from "@/lib/ludo/sound";
 import type { LudoColor, LudoMode, LudoRoomState } from "@/lib/ludo/types";
 
 
@@ -52,6 +52,7 @@ export default function LudoClient({ code }: { code:string }) {
       window.removeEventListener("touchstart",unlock,true);
       window.removeEventListener("pageshow",unlock);
       document.removeEventListener("visibilitychange",resumeVisible);
+      releaseLudoAudio();
     };
   },[]);
 

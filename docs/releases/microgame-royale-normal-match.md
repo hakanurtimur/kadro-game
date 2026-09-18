@@ -41,11 +41,11 @@ Production için `NEXT_PUBLIC_GAME_MODE=local` zorlaması açık olmamalı; aksi
 - Ludo allows available color selection in the lobby. Color changes reserve the corresponding board seat; joins use the first free seat.
 - Leaving requires a native modal confirmation. All departing pawns disappear, turn order and host ownership pass to remaining players, and the last remaining player wins. Empty rooms finish and reject new joins.
 - Finished Ludo pawns occupy four separate slots in their own colored center bay. Exact-roll movement rules remain unchanged.
-- The earlier iPhone audio experiment is intentionally excluded. Its diff and test are saved in `/tmp/dumbuk-iphone-pending.patch` and `/tmp/dumbuk-iphone-audio.test.mjs`.
+- The iPhone audio correction is included in the final release: supported browsers request playback audio, and muting/leaving restores the previous session. Active recording sessions are preserved; unsupported browsers retain ordinary Web Audio. Physical iPhone sound verification is still pending.
 
 Validation completed:
 
-- `npm run check`: 243 tests passed, syntax passed.
+- `npm run check`: 244 tests passed in the final release including the iPhone audio test, syntax passed.
 - `npm run build`: passed.
 - Actual Firebase Database emulator: eight unique rounds, guest-driven settlement and progression, final, host-only rematch and zeroed scores; Ludo color ownership, host transfer, departure, empty room and former-member denial passed.
 - Two browser sessions using the local store completed an unaccelerated eight-round match and started a rematch in the same room.
@@ -53,7 +53,7 @@ Validation completed:
 - Responsive visual check at 390 px: 16 finished pawns remain in separate colored bays without page overflow.
 - Firebase rules deployed successfully to `kadro-party-game-51d0c`.
 
-Physical iPhone–PC testing and production deployment verification remain release gates; local browser sessions are not a substitute for physical devices.
+The user approved release of all features without waiting for the physical iPhone–PC test. Two local browser sessions and the Firebase emulator were checked; these do not constitute physical-device verification.
 
 To repeat the emulator check, start Database Emulator on `127.0.0.1:9010` with project `demo-dumbuk`. Install `@firebase/rules-unit-testing@4` and `firebase@11` in a temporary directory, then run:
 
