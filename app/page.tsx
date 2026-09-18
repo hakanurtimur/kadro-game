@@ -1,66 +1,58 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ArrowRight, Bomb, Bot, Dices, Sparkles, Users } from "lucide-react";
+import { ArrowDown, ArrowUpRight, Bomb, Bot, Dices, MoveVertical, Users } from "lucide-react";
+import styles from "./home.module.css";
 
 export default function GamesHome() {
   const router = useRouter();
   return (
-    <main className="games-hub-shell">
-      <div className="soft-grid" />
-      <div className="hub-orb hub-orb-a" />
-      <div className="hub-orb hub-orb-b" />
-      <section className="games-hub-hero">
-        <span className="brand-chip"><Sparkles size={16}/> aynı masa, dört oyun</span>
-        <h1>Bu gece ne oynuyoruz?</h1>
-        <p>Oda kodunu paylaş, tarayıcıdan direkt gir. AI destekli KADRO, Kızma Birader, TAŞIR veya 10 saniyelik kaoslardan oluşan Microgame Royale.</p>
+    <main className={styles.home}>
+      <header className={styles.header}>
+        <a href="/" aria-label="DÜMBÜK ana sayfa"><img src="/brand/logo-horizontal.svg" width="258" height="82" alt="DÜMBÜK" /></a>
+        <a className={styles.headerLink} href="#oyunlar">Tayfa burada <ArrowDown size={16}/></a>
+      </header>
+      <section className={styles.hero}>
+        <div className={styles.heroCopy}>
+          <span className={styles.note}>Arkadaş arası rekabet kurumu.</span>
+          <h1>Ekip tamam mı?<br/><span>Bir dümbük eksik.</span></h1>
+          <p>Odayı aç. Tayfayı çağır. Aynı masada ya da ayrı şehirlerde, bir oyun daha bahanesi hep burada.</p>
+          <a className={styles.cta} href="#oyunlar">Oyunu seç, masayı kur <ArrowDown size={20}/></a>
+          <small>İndirme yok. Oda kodu var. Bolca “son bir el” var.</small>
+        </div>
+        <div className={styles.heroArt} aria-hidden="true">
+          <span className={styles.speech}>sen gel, biz anlatırız.</span>
+          <img src="/brand/mascot.svg" width="400" height="400" alt="" />
+          <span className={styles.signature}>çok iddialı. sebepsiz yere.</span>
+        </div>
       </section>
-
-      <section className="game-choice-grid">
-        <button className="game-choice-card kadro-choice" onClick={() => router.push("/kadro")}>
-          <div className="game-choice-art kadro-choice-art"><Bot size={46}/><span>✦</span></div>
-          <div className="game-choice-copy">
-            <small>AI PARTY GAME</small>
-            <h2>KADRO Oyna</h2>
-            <p>Karakterleri açık artırmada kap, en iyi ekibi kur, AI jüriye meydan oku.</p>
-            <div className="choice-pills"><span><Users size={14}/> moderatör + oyuncular</span><span>🎲 Kaos</span></div>
-          </div>
-          <span className="choice-go">Gir <ArrowRight size={18}/></span>
-        </button>
-
-        <button className="game-choice-card ludo-choice" onClick={() => router.push("/ludo")}>
-          <div className="game-choice-art ludo-choice-art"><Dices size={48}/><span>● ● ● ●</span></div>
-          <div className="game-choice-copy">
-            <small>KLASİK MASA OYUNU</small>
-            <h2>Kızma Birader Oyna</h2>
-            <p>4 taş, 6 ile çıkış, rakibi yeme, tam zarla eve giriş. İstersen Kaos kartlarını aç.</p>
-            <div className="choice-pills"><span><Users size={14}/> 2–4 kişi</span><span>⚡ Klasik / Kaos</span></div>
-          </div>
-          <span className="choice-go">Gir <ArrowRight size={18}/></span>
-        </button>
-
-        <button className="game-choice-card" onClick={() => router.push("/tasir")}>
-          <div className="game-choice-art" style={{background:"linear-gradient(145deg,#eeeaff,#fff0cc)",fontSize:52}}>↕</div>
-          <div className="game-choice-copy">
-            <small>2 KİŞİLİK KAYDIRMA OYUNU</small>
-            <h2>TAŞIR Oyna</h2>
-            <p>4×5 kapalı taşları aç. Çıkan sembol hangi hatta aitse o hat kayar; beş hattı da 4/4 tamamla.</p>
-            <div className="choice-pills"><span><Users size={14}/> tam 2 kişi</span><span>★ Joker + TKM</span></div>
-          </div>
-          <span className="choice-go">Gir <ArrowRight size={18}/></span>
-        </button>
-
-        <button className="game-choice-card" onClick={() => router.push("/microgame")}>
-          <div className="game-choice-art" style={{background:"linear-gradient(145deg,#ffe7d6,#ece8ff)",color:"#6b5e76"}}><Bomb size={50}/></div>
-          <div className="game-choice-copy">
-            <small>HIZLI PARTY GAME</small>
-            <h2>Microgame Royale</h2>
-            <p>Dokuz kısa oyun, ortak skor, sıfır elenme. Hafıza, refleks ve aynı arenada kapışma.</p>
-            <div className="choice-pills"><span><Users size={14}/> 2–6 kişi</span><span>💣 Test Mode</span></div>
-          </div>
-          <span className="choice-go">Gir <ArrowRight size={18}/></span>
-        </button>
+      <section id="oyunlar" className={styles.games} aria-labelledby="games-title">
+        <div className={styles.sectionHeading}><div><span>MASADA NE VAR?</span><h2 id="games-title">Oyun değişir. Tayfa aynı.</h2></div><p>Birini seç. Odanı kur veya kodla katıl.</p></div>
+        <div className={styles.grid}>
+          <button className={`${styles.card} ${styles.kadro}`} onClick={() => router.push("/kadro")}>
+            <div className={styles.cardTop}><Bot size={38}/><span>01 / AI JÜRİ</span><ArrowUpRight className={styles.cardArrow}/></div>
+            <h3>KADRO Oyna</h3><p>Karakterleri açık artırmada kap. Ekibini kur, AI jüriyi ikna et.</p>
+            <div className={styles.cardBottom}><span><Users size={15}/> Moderatör + 2–8 kişi</span><b>Masaya geç →</b></div>
+          </button>
+          <button className={`${styles.card} ${styles.ludo}`} onClick={() => router.push("/ludo")}>
+            <div className={styles.cardTop}><Dices size={38}/><span>02 / ESKİ DOST</span><ArrowUpRight className={styles.cardArrow}/></div>
+            <h3>Kızma Birader Oyna</h3><p>Adında kızma var. Gerisini garanti edemiyoruz. Klasik veya Kaos.</p>
+            <div className={styles.cardBottom}><span><Users size={15}/> 2–4 kişi</span><b>Zarı at →</b></div>
+          </button>
+          <button className={`${styles.card} ${styles.tasir}`} onClick={() => router.push("/tasir")}>
+            <div className={styles.cardTop}><MoveVertical size={38}/><span>03 / KAFA KAFAYA</span><ArrowUpRight className={styles.cardArrow}/></div>
+            <h3>TAŞIR Oyna</h3><p>Taşı aç, hattı kaydır. Beş hattı tamamla, karşı tarafa geçmiş olsun.</p>
+            <div className={styles.cardBottom}><span><Users size={15}/> 2 kişi</span><b>Hamleni yap →</b></div>
+          </button>
+          <button className={`${styles.card} ${styles.micro}`} onClick={() => router.push("/microgame")}>
+            <div className={styles.cardTop}><Bomb size={38}/><span>04 / TATLI KAOS</span><ArrowUpRight className={styles.cardArrow}/></div>
+            <h3>Microgame Royale</h3><p>Dokuz kısa oyun. Refleks, hafıza, biraz panik. Elenmek yok, rövanş var.</p>
+            <div className={styles.cardBottom}><span><Users size={15}/> 2–6 kişi · Test modu</span><b>Kaosa katıl →</b></div>
+          </button>
+        </div>
       </section>
+      <section className={styles.origin}><img src="/brand/mascot.svg" alt="" width="64" height="64"/><p>Bir öğle arasında başladı.<br/><strong>“Son bir el” diye diye buraya geldik.</strong></p><span>Bizim masadan, sizin tayfaya.</span></section>
+      <footer className={styles.footer}><b>DÜMBÜK</b><span>Muhabbet baki. Skor geçici.</span><a href="/brand/dumbuk-brand-kit.zip" download>Logo paketi ↗</a></footer>
     </main>
   );
 }

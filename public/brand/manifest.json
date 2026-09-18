@@ -1,0 +1,154 @@
+{
+  "brand": "DÜMBÜK",
+  "source": "User-approved AI-generated concept, converted to actual vector paths with Potrace; deterministic exports with sharp.",
+  "assets": [
+    {
+      "file": "apple-touch-icon.png",
+      "width": 180,
+      "height": 180,
+      "bytes": 8808
+    },
+    {
+      "file": "favicon.ico",
+      "bytes": 4099
+    },
+    {
+      "file": "favicon.svg",
+      "width": 512,
+      "height": 512,
+      "bytes": 13179
+    },
+    {
+      "file": "icon-16.png",
+      "width": 16,
+      "height": 16,
+      "bytes": 578
+    },
+    {
+      "file": "icon-192.png",
+      "width": 192,
+      "height": 192,
+      "bytes": 9582
+    },
+    {
+      "file": "icon-32.png",
+      "width": 32,
+      "height": 32,
+      "bytes": 1338
+    },
+    {
+      "file": "icon-48.png",
+      "width": 48,
+      "height": 48,
+      "bytes": 2129
+    },
+    {
+      "file": "icon-512.png",
+      "width": 512,
+      "height": 512,
+      "bytes": 31613
+    },
+    {
+      "file": "icon-maskable-512.png",
+      "width": 512,
+      "height": 512,
+      "bytes": 23839
+    },
+    {
+      "file": "logo-black.png",
+      "width": 2608,
+      "height": 846,
+      "bytes": 115366
+    },
+    {
+      "file": "logo-black.svg",
+      "width": 1304,
+      "height": 423,
+      "bytes": 18589
+    },
+    {
+      "file": "logo-horizontal.png",
+      "width": 2608,
+      "height": 846,
+      "bytes": 138464
+    },
+    {
+      "file": "logo-horizontal.svg",
+      "width": 1304,
+      "height": 423,
+      "bytes": 24003
+    },
+    {
+      "file": "logo-on-dark.png",
+      "width": 2768,
+      "height": 1006,
+      "bytes": 183152
+    },
+    {
+      "file": "logo-on-dark.svg",
+      "width": 1384,
+      "height": 503,
+      "bytes": 24088
+    },
+    {
+      "file": "logo-stacked.png",
+      "width": 1840,
+      "height": 1610,
+      "bytes": 144373
+    },
+    {
+      "file": "logo-stacked.svg",
+      "width": 920,
+      "height": 805,
+      "bytes": 23598
+    },
+    {
+      "file": "logo-white.png",
+      "width": 2608,
+      "height": 846,
+      "bytes": 92194
+    },
+    {
+      "file": "logo-white.svg",
+      "width": 1304,
+      "height": 423,
+      "bytes": 18589
+    },
+    {
+      "file": "mascot.png",
+      "width": 810,
+      "height": 846,
+      "bytes": 61798
+    },
+    {
+      "file": "mascot.svg",
+      "width": 405,
+      "height": 423,
+      "bytes": 13076
+    },
+    {
+      "file": "og-1200x630.png",
+      "width": 1200,
+      "height": 630,
+      "bytes": 66867
+    },
+    {
+      "file": "og.svg",
+      "width": 1200,
+      "height": 630,
+      "bytes": 24353
+    },
+    {
+      "file": "wordmark.png",
+      "width": 1788,
+      "height": 630,
+      "bytes": 72550
+    },
+    {
+      "file": "wordmark.svg",
+      "width": 894,
+      "height": 315,
+      "bytes": 10541
+    }
+  ]
+}

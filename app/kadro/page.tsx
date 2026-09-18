@@ -49,7 +49,7 @@ export default function Home() {
 
   return (
     <main className="home-shell">
-      <button className="back-to-games" onClick={() => router.push("/")}><ArrowLeft size={16}/> Oyunlar</button>
+      <button className="back-to-games" onClick={() => router.push("/")}><ArrowLeft size={16}/> DÜMBÜK · Oyunlar</button>
       <div className="soft-grid" />
       <div className="floating-gem gem-a" />
       <div className="floating-gem gem-b" />

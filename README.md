@@ -1,4 +1,10 @@
-# KADRO! — Moderatör masası
+# DÜMBÜK — Arkadaş arası rekabet kurumu
+
+DÜMBÜK çok oyunlu arkadaş platformudur. KADRO, Kızma Birader, TAŞIR ve Microgame Royale bu platformun oyunlarıdır.
+
+Logo paketi: `public/brand/dumbuk-brand-kit.zip`. Kimlik ve dosya rehberi: `docs/branding/README.md`.
+
+## KADRO — Moderatör masası
 
 Pastel, low-poly anime hissini koruyan tarayıcı açık artırma oyunu. **1 oynamayan moderatör + 2–8 yarışmacı** gerekir. Herkes nickname ve oda koduyla girer; kayıt ekranı yoktur.
 

@@ -31,7 +31,7 @@ export default function MicrogameHome(){
   }
 
   return <main className={styles.home}>
-    <button className={styles.back} onClick={()=>router.push("/")}><ArrowLeft size={16}/> Oyunlar</button>
+    <button className={styles.back} onClick={()=>router.push("/")}><ArrowLeft size={16}/> DÜMBÜK · Oyunlar</button>
     <section className={styles.hero}>
       <span className={styles.eyebrow}><Gamepad2 size={16}/> 2–6 OYUNCU · HIZLI MİNİ OYUNLAR</span>
       <h1>Microgame <em>Royale</em></h1>
