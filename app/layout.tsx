@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./party-upgrade.css";
 import "./dumbuk-games.css";
+import "./dumbuk-ludo.css";
 
 
 export const viewport: Viewport = {

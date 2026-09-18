@@ -1,0 +1,52 @@
+/* DÜMBÜK tabletop details: flat marker lines, physical tokens, legible player colors. */
+.ludo-board-wrap{background:#fffbef;border:3px solid #191919;border-radius:18px 12px 16px 14px;box-shadow:5px 6px 0 #191919;padding:12px}
+.ludo-board{background:#e6dfce;border-radius:8px;gap:2px}
+.ludo-yard-zone{position:relative;border:2px solid #191919;border-radius:12px 9px 14px 8px;box-shadow:inset 0 0 0 6px #fffbef88;background-image:repeating-linear-gradient(-35deg,transparent 0 13px,#19191906 13px 15px)}
+.ludo-yard-zone.red{background-color:#f6c5c1}.ludo-yard-zone.green{background-color:#bde1c9}.ludo-yard-zone.yellow{background-color:#f5dfa4}.ludo-yard-zone.blue{background-color:#c5cef2}
+.ludo-yard-zone>span{position:absolute;left:10%;top:12%;font-size:clamp(6px,1vw,10px);font-weight:900;letter-spacing:.04em;color:#191919;line-height:1;pointer-events:none}
+/* Inline socket sizing belongs to board geometry; only its finish is overridden. */
+.ludo-yard-socket{background:#fffbef80!important;border:1.5px dashed #19191985!important;box-shadow:none!important}
+.ludo-cell{background:#fffdf5;border:1px solid #19191970;border-radius:3px;color:#191919}
+.ludo-cell.safe{box-shadow:inset 0 0 0 1px #191919;border-style:solid;font-size:clamp(8px,1.5vw,14px);font-weight:900}
+.ludo-cell.home-lane{border-color:#19191980}
+.ludo-finish{clip-path:none;background:#fffbef;border:2px solid #191919;border-radius:9px;overflow:hidden;pointer-events:none}
+.ludo-finish img{display:block;width:84%;height:84%;object-fit:contain;transform:rotate(-7deg);pointer-events:none}
+.ludo-pawn{filter:drop-shadow(1px 2px 0 #191919);opacity:1}
+.ludo-pawn .pawn-body,.ludo-pawn .pawn-head,.ludo-capture-ghost .ghost-body,.ludo-capture-ghost .ghost-head{border:1.4px solid #191919;box-shadow:none}
+.ludo-pawn .pawn-body{border-radius:35% 40% 22% 26%}
+.ludo-pawn .pawn-head{border-radius:43% 50% 45% 40%}
+.ludo-pawn .pawn-head::after{content:"";position:absolute;left:24%;top:38%;width:16%;height:18%;border-radius:50%;background:#191919;box-shadow:4px 0 0 #191919}
+.ludo-pawn.legal::before{content:"";position:absolute;inset:-12%;border:2px dashed #191919;border-radius:45%;background:#dafa2838;pointer-events:none}
+.ludo-pawn.selected::before{border:2px solid #191919;background:#dafa28a0;box-shadow:0 0 0 2px #fffdf5}
+.ludo-pawn.selected:is(.red,.green,.yellow,.blue){filter:drop-shadow(1px 2px 0 #191919)}
+.ludo-pawn.shielded i{background:#fffbef;color:#191919;border:1px solid #191919;box-shadow:1px 1px 0 #191919}
+.ludo-hero-pawns i,.ludo-hero-pawns i::before,.ludo-mini-pawn,.ludo-mini-pawn::before{border:1.5px solid #191919;box-shadow:2px 2px 0 #191919}
+.ludo-hero-pawns i{animation:none;transform:rotate(-5deg)}.ludo-hero-pawns i:nth-child(even){transform:rotate(6deg)}
+.ludo-die{background:#fffdf5;border:2.5px solid #191919;box-shadow:4px 5px 0 #191919;border-radius:15% 20% 17% 22%!important}
+.ludo-die::after{display:none}
+.ludo-die.mini{border-width:2px;box-shadow:2px 3px 0 #191919}
+.ludo-die svg circle{stroke:#191919;stroke-width:1.5;filter:none!important}
+.dice-console{background:#fffdf5;border:2px solid #191919;box-shadow:4px 4px 0 #191919;border-radius:12px;backdrop-filter:none}
+.dice-console::before{content:"";position:absolute;left:0;top:0;right:0;height:5px;background:var(--console-accent)}
+.ludo-turn-status strong{color:#191919}.ludo-turn-status small{color:#58534d;font-size:11px;max-width:230px}
+.turn-color-dot{border:1px solid #191919;box-shadow:none}
+.ludo-turn-status>.turn-color-dot{box-shadow:none}
+.ludo-turn-card>.turn-color-dot{box-shadow:2px 2px 0 #191919}
+.ludo-turn-card{border-radius:10px 14px 10px 12px;background:#e9e0fa}
+.ludo-score-row.turn{border:2px solid #191919;background:#eaf698;box-shadow:2px 2px 0 #191919}
+.move-hint{background:#eaf698;color:#191919;border:1px dashed #191919;border-radius:5px;padding:10px;line-height:1.5}
+.ludo-action-toast{background:#fffdf5;color:#191919;border:1.5px solid #191919;border-radius:8px;box-shadow:2px 3px 0 #191919;backdrop-filter:none}
+.ludo-action-toast small{color:#58534d;font-size:9px}.ludo-action-toast strong{font-size:12px}
+.ludo-action-mark{background:#e9e0fa;border:1px solid #191919;border-radius:6px;transform:rotate(-5deg);color:#191919}
+.action-capture{background:#ffdeca}.action-home{background:#eaf698}.action-chaos{background:#e9e0fa}
+:is(.action-capture,.action-home,.action-chaos) .ludo-action-mark{background:#fffdf5;color:#191919}
+.peace-chip,.chaos-history-mini{background:#d9eee1;color:#191919;border:1.5px dashed #191919;border-radius:8px}
+.chaos-history-mini{background:#e9e0fa}.chaos-history-mini small,.chaos-history-mini span{color:#454039}
+.ludo-winner-overlay{background:#fffbefed;backdrop-filter:blur(8px)}
+.ludo-winner-overlay h2{color:#191919;max-width:90vw;overflow-wrap:anywhere;letter-spacing:-.03em}
+.ludo-winner-overlay small{background:#dafa28;color:#191919;border:1.5px solid #191919;padding:8px 16px;transform:rotate(-4deg)}
+.ludo-winner-overlay p{color:#58534d;max-width:36ch;line-height:1.6}
+.winner-pawn{filter:drop-shadow(3px 4px 0 #191919)}
+.winner-pawn::before,.winner-pawn span{border:2px solid #191919}
+@media(max-width:780px){.ludo-board-wrap{padding:7px;box-shadow:3px 4px 0 #191919}.ludo-board{gap:1px}.ludo-yard-zone{border-width:1.5px;box-shadow:inset 0 0 0 3px #fffbef88}.ludo-yard-zone>span{font-size:6px;left:9%;top:10%;letter-spacing:0}.ludo-pawn .pawn-head::after{box-shadow:2px 0 0 #191919}.ludo-sidebar-right{filter:none}.ludo-die{box-shadow:3px 4px 0 #191919}.ludo-action-toast strong{font-size:11px}}
+@media(prefers-reduced-motion:reduce){.ludo-hero-pawns i{transform:none}}

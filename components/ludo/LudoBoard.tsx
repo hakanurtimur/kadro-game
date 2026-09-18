@@ -159,14 +159,15 @@ export default function LudoBoard({ room, uid, legalMoves, selectedPawnIndex, pr
 
   return <div className="ludo-board-wrap">
     <div className="ludo-board" aria-label="Kızma Birader tahtası" role="application">
-      <div className="ludo-yard-zone red" />
-      <div className="ludo-yard-zone green" />
-      <div className="ludo-yard-zone yellow" />
-      <div className="ludo-yard-zone blue" />
-      <div className="ludo-finish"><span>★</span></div>
+      <div className="ludo-yard-zone red"><span aria-hidden="true">01 / KIRMIZI</span></div>
+      <div className="ludo-yard-zone green"><span aria-hidden="true">02 / YEŞİL</span></div>
+      <div className="ludo-yard-zone yellow"><span aria-hidden="true">03 / SARI</span></div>
+      <div className="ludo-yard-zone blue"><span aria-hidden="true">04 / MAVİ</span></div>
+      <div className="ludo-finish"><img src="/brand/mascot.svg" width="64" height="64" alt=""/></div>
 
       {YARDS.map((yard,seat)=>yard.map(([row,col],index)=><div
         key={`yard-socket-${seat}-${index}`}
+        className="ludo-yard-socket"
         style={yardSocketStyle(row,col,COLORS[seat])}
         aria-hidden="true"
       />))}
