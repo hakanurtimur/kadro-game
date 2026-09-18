@@ -24,10 +24,10 @@
       "$code": {
         ".read": "auth != null",
         ".write": "auth != null && newData.exists() && ((!data.exists() && newData.child('hostUid').val() === auth.uid && newData.child('players').child(auth.uid).child('uid').val() === auth.uid) || (data.exists() && data.child('players').child(auth.uid).exists()) || (data.exists() && data.child('status').val() === 'lobby' && !data.child('players').child(auth.uid).exists() && newData.child('players').child(auth.uid).child('uid').val() === auth.uid))",
-        ".validate": "newData.hasChildren(['schemaVersion','code','hostUid','mode','status','phase','createdAt','updatedAt','players','turnNumber','randomSeed','randomSeq','chaos']) && newData.child('schemaVersion').val() === 1 && newData.child('code').val() === $code && newData.child('hostUid').isString() && (newData.child('mode').val() === 'classic' || newData.child('mode').val() === 'chaos') && (newData.child('status').val() === 'lobby' || newData.child('status').val() === 'playing' || newData.child('status').val() === 'finished') && (!data.exists() || (newData.child('hostUid').val() === data.child('hostUid').val() && newData.child('code').val() === data.child('code').val() && newData.child('createdAt').val() === data.child('createdAt').val()))",
+        ".validate": "newData.hasChildren(['schemaVersion','code','hostUid','mode','status','phase','createdAt','updatedAt','turnNumber','randomSeed','randomSeq','chaos']) && newData.child('schemaVersion').val() === 1 && newData.child('code').val() === $code && newData.child('hostUid').isString() && (newData.child('mode').val() === 'classic' || newData.child('mode').val() === 'chaos') && (newData.child('status').val() === 'lobby' || newData.child('status').val() === 'playing' || newData.child('status').val() === 'finished') && (!data.exists() || ((newData.child('hostUid').val() === data.child('hostUid').val() || (auth.uid === data.child('hostUid').val() && !newData.child('players').child(auth.uid).exists() && newData.child('players').child(newData.child('hostUid').val()).exists())) && newData.child('code').val() === data.child('code').val() && newData.child('createdAt').val() === data.child('createdAt').val())) && ((newData.child('players').exists() && newData.child('players').child(newData.child('hostUid').val()).exists()) || (newData.child('status').val() === 'finished' && !newData.child('players').exists() && !newData.child('turnUid').exists() && !newData.child('winnerUid').exists()))",
         "players": {
           "$uid": {
-            ".validate": "newData.hasChildren(['uid','nickname','seat','color','pawns']) && newData.child('uid').val() === $uid && newData.child('nickname').isString() && newData.child('nickname').val().length > 0 && newData.child('nickname').val().length <= 20 && newData.child('seat').isNumber() && newData.child('seat').val() >= 0 && newData.child('seat').val() < 4"
+            ".validate": "newData.hasChildren(['uid','nickname','seat','color','pawns']) && newData.child('uid').val() === $uid && newData.child('nickname').isString() && newData.child('nickname').val().length > 0 && newData.child('nickname').val().length <= 20 && newData.child('seat').isNumber() && newData.child('seat').val() >= 0 && newData.child('seat').val() < 4 && ((newData.child('seat').val() === 0 && newData.child('color').val() === 'red') || (newData.child('seat').val() === 1 && newData.child('color').val() === 'green') || (newData.child('seat').val() === 2 && newData.child('color').val() === 'yellow') || (newData.child('seat').val() === 3 && newData.child('color').val() === 'blue')) && (!data.exists() || (newData.child('seat').val() === data.child('seat').val() && newData.child('color').val() === data.child('color').val()) || (auth.uid === $uid && data.parent().parent().child('status').val() === 'lobby' && newData.parent().parent().child('status').val() === 'lobby'))"
           }
         }
       }
@@ -141,6 +141,153 @@
           "submissions": {
             "$uid": {
               ".validate": "newData.hasChildren(['score','note','submittedAt']) && root.child('microgameRooms').child($code).child('players').child($uid).exists() && newData.child('score').isNumber() && newData.child('score').val() >= 0 && newData.child('score').val() <= 100 && newData.child('score').val() % 1 === 0 && newData.child('note').isString() && newData.child('note').val().length <= 120 && newData.child('submittedAt').isNumber()"
+            }
+          }
+        },
+        "match": {
+          ".validate": "newData.hasChildren([\"version\", \"id\", \"status\", \"order\", \"index\", \"baseRoundNumber\", \"startedAt\", \"finishedAt\", \"nextAt\", \"roundBaseScores\"]) && newData.child('version').val() === 1 && newData.child('id').isString() && newData.child('id').val().length > 0 && newData.child('id').val().length <= 120 && (newData.child('status').val() === 'active' || newData.child('status').val() === 'finished') && newData.child('index').isNumber() && newData.child('index').val() >= 0 && newData.child('index').val() % 1 === 0 && newData.child('index').val() < 8 && newData.child('baseRoundNumber').isNumber() && newData.child('baseRoundNumber').val() >= 0 && newData.child('baseRoundNumber').val() % 1 === 0 && newData.child('startedAt').isNumber() && newData.child('startedAt').val() >= 0 && newData.child('finishedAt').isNumber() && newData.child('finishedAt').val() >= 0 && newData.child('nextAt').isNumber() && newData.child('nextAt').val() >= 0 && newData.parent().child('roundNumber').val() === newData.child('baseRoundNumber').val() + newData.child('index').val() + 1 && ((newData.child('index').val() === 0 && newData.parent().child('activeGameId').val() === newData.child('order').child('0').val()) || (newData.child('index').val() === 1 && newData.parent().child('activeGameId').val() === newData.child('order').child('1').val()) || (newData.child('index').val() === 2 && newData.parent().child('activeGameId').val() === newData.child('order').child('2').val()) || (newData.child('index').val() === 3 && newData.parent().child('activeGameId').val() === newData.child('order').child('3').val()) || (newData.child('index').val() === 4 && newData.parent().child('activeGameId').val() === newData.child('order').child('4').val()) || (newData.child('index').val() === 5 && newData.parent().child('activeGameId').val() === newData.child('order').child('5').val()) || (newData.child('index').val() === 6 && newData.parent().child('activeGameId').val() === newData.child('order').child('6').val()) || (newData.child('index').val() === 7 && newData.parent().child('activeGameId').val() === newData.child('order').child('7').val())) && (newData.parent().child('status').val() === 'playing' || newData.parent().child('status').val() === 'results') && ((newData.child('status').val() === 'active' && newData.child('finishedAt').val() === 0) || (newData.child('status').val() === 'finished' && newData.child('index').val() === 7 && newData.parent().child('status').val() === 'results' && newData.child('finishedAt').val() > 0 && newData.child('nextAt').val() === 0 && newData.child('history').hasChildren(['0','1','2','3','4','5','6','7']))) && (((!data.exists() || newData.child('id').val() !== data.child('id').val()) && auth.uid === newData.parent().child('hostUid').val() && (!data.exists() || data.child('status').val() === 'finished') && newData.child('index').val() === 0 && newData.child('status').val() === 'active') || (data.exists() && newData.child('id').val() === data.child('id').val() && newData.child('baseRoundNumber').val() === data.child('baseRoundNumber').val() && newData.child('startedAt').val() === data.child('startedAt').val() && newData.child('order').child('0').val() === data.child('order').child('0').val() && newData.child('order').child('1').val() === data.child('order').child('1').val() && newData.child('order').child('2').val() === data.child('order').child('2').val() && newData.child('order').child('3').val() === data.child('order').child('3').val() && newData.child('order').child('4').val() === data.child('order').child('4').val() && newData.child('order').child('5').val() === data.child('order').child('5').val() && newData.child('order').child('6').val() === data.child('order').child('6').val() && newData.child('order').child('7').val() === data.child('order').child('7').val()))",
+          "order": {
+            ".validate": "newData.hasChildren([\"0\", \"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\"]) && (newData.child('0').val() === 'bomb-pass' || newData.child('0').val() === 'shrink-arena' || newData.child('0').val() === 'freeze-dance' || newData.child('0').val() === 'echo-gestures' || newData.child('0').val() === 'memory-spot' || newData.child('0').val() === 'red-light' || newData.child('0').val() === 'shadow-match' || newData.child('0').val() === 'hold-release' || newData.child('0').val() === 'crown-control') && (newData.child('1').val() === 'bomb-pass' || newData.child('1').val() === 'shrink-arena' || newData.child('1').val() === 'freeze-dance' || newData.child('1').val() === 'echo-gestures' || newData.child('1').val() === 'memory-spot' || newData.child('1').val() === 'red-light' || newData.child('1').val() === 'shadow-match' || newData.child('1').val() === 'hold-release' || newData.child('1').val() === 'crown-control') && (newData.child('2').val() === 'bomb-pass' || newData.child('2').val() === 'shrink-arena' || newData.child('2').val() === 'freeze-dance' || newData.child('2').val() === 'echo-gestures' || newData.child('2').val() === 'memory-spot' || newData.child('2').val() === 'red-light' || newData.child('2').val() === 'shadow-match' || newData.child('2').val() === 'hold-release' || newData.child('2').val() === 'crown-control') && (newData.child('3').val() === 'bomb-pass' || newData.child('3').val() === 'shrink-arena' || newData.child('3').val() === 'freeze-dance' || newData.child('3').val() === 'echo-gestures' || newData.child('3').val() === 'memory-spot' || newData.child('3').val() === 'red-light' || newData.child('3').val() === 'shadow-match' || newData.child('3').val() === 'hold-release' || newData.child('3').val() === 'crown-control') && (newData.child('4').val() === 'bomb-pass' || newData.child('4').val() === 'shrink-arena' || newData.child('4').val() === 'freeze-dance' || newData.child('4').val() === 'echo-gestures' || newData.child('4').val() === 'memory-spot' || newData.child('4').val() === 'red-light' || newData.child('4').val() === 'shadow-match' || newData.child('4').val() === 'hold-release' || newData.child('4').val() === 'crown-control') && (newData.child('5').val() === 'bomb-pass' || newData.child('5').val() === 'shrink-arena' || newData.child('5').val() === 'freeze-dance' || newData.child('5').val() === 'echo-gestures' || newData.child('5').val() === 'memory-spot' || newData.child('5').val() === 'red-light' || newData.child('5').val() === 'shadow-match' || newData.child('5').val() === 'hold-release' || newData.child('5').val() === 'crown-control') && (newData.child('6').val() === 'bomb-pass' || newData.child('6').val() === 'shrink-arena' || newData.child('6').val() === 'freeze-dance' || newData.child('6').val() === 'echo-gestures' || newData.child('6').val() === 'memory-spot' || newData.child('6').val() === 'red-light' || newData.child('6').val() === 'shadow-match' || newData.child('6').val() === 'hold-release' || newData.child('6').val() === 'crown-control') && (newData.child('7').val() === 'bomb-pass' || newData.child('7').val() === 'shrink-arena' || newData.child('7').val() === 'freeze-dance' || newData.child('7').val() === 'echo-gestures' || newData.child('7').val() === 'memory-spot' || newData.child('7').val() === 'red-light' || newData.child('7').val() === 'shadow-match' || newData.child('7').val() === 'hold-release' || newData.child('7').val() === 'crown-control') && newData.child('0').val() !== newData.child('1').val() && newData.child('0').val() !== newData.child('2').val() && newData.child('0').val() !== newData.child('3').val() && newData.child('0').val() !== newData.child('4').val() && newData.child('0').val() !== newData.child('5').val() && newData.child('0').val() !== newData.child('6').val() && newData.child('0').val() !== newData.child('7').val() && newData.child('1').val() !== newData.child('2').val() && newData.child('1').val() !== newData.child('3').val() && newData.child('1').val() !== newData.child('4').val() && newData.child('1').val() !== newData.child('5').val() && newData.child('1').val() !== newData.child('6').val() && newData.child('1').val() !== newData.child('7').val() && newData.child('2').val() !== newData.child('3').val() && newData.child('2').val() !== newData.child('4').val() && newData.child('2').val() !== newData.child('5').val() && newData.child('2').val() !== newData.child('6').val() && newData.child('2').val() !== newData.child('7').val() && newData.child('3').val() !== newData.child('4').val() && newData.child('3').val() !== newData.child('5').val() && newData.child('3').val() !== newData.child('6').val() && newData.child('3').val() !== newData.child('7').val() && newData.child('4').val() !== newData.child('5').val() && newData.child('4').val() !== newData.child('6').val() && newData.child('4').val() !== newData.child('7').val() && newData.child('5').val() !== newData.child('6').val() && newData.child('5').val() !== newData.child('7').val() && newData.child('6').val() !== newData.child('7').val()",
+            "0": {
+              ".validate": "(newData.val() === 'bomb-pass' || newData.val() === 'shrink-arena' || newData.val() === 'freeze-dance' || newData.val() === 'echo-gestures' || newData.val() === 'memory-spot' || newData.val() === 'red-light' || newData.val() === 'shadow-match' || newData.val() === 'hold-release' || newData.val() === 'crown-control')"
+            },
+            "1": {
+              ".validate": "(newData.val() === 'bomb-pass' || newData.val() === 'shrink-arena' || newData.val() === 'freeze-dance' || newData.val() === 'echo-gestures' || newData.val() === 'memory-spot' || newData.val() === 'red-light' || newData.val() === 'shadow-match' || newData.val() === 'hold-release' || newData.val() === 'crown-control')"
+            },
+            "2": {
+              ".validate": "(newData.val() === 'bomb-pass' || newData.val() === 'shrink-arena' || newData.val() === 'freeze-dance' || newData.val() === 'echo-gestures' || newData.val() === 'memory-spot' || newData.val() === 'red-light' || newData.val() === 'shadow-match' || newData.val() === 'hold-release' || newData.val() === 'crown-control')"
+            },
+            "3": {
+              ".validate": "(newData.val() === 'bomb-pass' || newData.val() === 'shrink-arena' || newData.val() === 'freeze-dance' || newData.val() === 'echo-gestures' || newData.val() === 'memory-spot' || newData.val() === 'red-light' || newData.val() === 'shadow-match' || newData.val() === 'hold-release' || newData.val() === 'crown-control')"
+            },
+            "4": {
+              ".validate": "(newData.val() === 'bomb-pass' || newData.val() === 'shrink-arena' || newData.val() === 'freeze-dance' || newData.val() === 'echo-gestures' || newData.val() === 'memory-spot' || newData.val() === 'red-light' || newData.val() === 'shadow-match' || newData.val() === 'hold-release' || newData.val() === 'crown-control')"
+            },
+            "5": {
+              ".validate": "(newData.val() === 'bomb-pass' || newData.val() === 'shrink-arena' || newData.val() === 'freeze-dance' || newData.val() === 'echo-gestures' || newData.val() === 'memory-spot' || newData.val() === 'red-light' || newData.val() === 'shadow-match' || newData.val() === 'hold-release' || newData.val() === 'crown-control')"
+            },
+            "6": {
+              ".validate": "(newData.val() === 'bomb-pass' || newData.val() === 'shrink-arena' || newData.val() === 'freeze-dance' || newData.val() === 'echo-gestures' || newData.val() === 'memory-spot' || newData.val() === 'red-light' || newData.val() === 'shadow-match' || newData.val() === 'hold-release' || newData.val() === 'crown-control')"
+            },
+            "7": {
+              ".validate": "(newData.val() === 'bomb-pass' || newData.val() === 'shrink-arena' || newData.val() === 'freeze-dance' || newData.val() === 'echo-gestures' || newData.val() === 'memory-spot' || newData.val() === 'red-light' || newData.val() === 'shadow-match' || newData.val() === 'hold-release' || newData.val() === 'crown-control')"
+            },
+            "$other": {
+              ".validate": false
+            }
+          },
+          "roundBaseScores": {
+            "$uid": {
+              ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 800 && newData.parent().parent().parent().child('players').child($uid).exists()"
+            }
+          },
+          "history": {
+            "0": {
+              ".validate": "newData.hasChildren(['gameId','roundNumber','endedAt','gains','totals']) && (newData.child('gameId').val() === 'bomb-pass' || newData.child('gameId').val() === 'shrink-arena' || newData.child('gameId').val() === 'freeze-dance' || newData.child('gameId').val() === 'echo-gestures' || newData.child('gameId').val() === 'memory-spot' || newData.child('gameId').val() === 'red-light' || newData.child('gameId').val() === 'shadow-match' || newData.child('gameId').val() === 'hold-release' || newData.child('gameId').val() === 'crown-control') && newData.child('roundNumber').isNumber() && newData.child('endedAt').isNumber() && newData.child('endedAt').val() >= 0",
+              "gains": {
+                "$uid": {
+                  ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 100"
+                }
+              },
+              "totals": {
+                "$uid": {
+                  ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 800"
+                }
+              }
+            },
+            "1": {
+              ".validate": "newData.hasChildren(['gameId','roundNumber','endedAt','gains','totals']) && (newData.child('gameId').val() === 'bomb-pass' || newData.child('gameId').val() === 'shrink-arena' || newData.child('gameId').val() === 'freeze-dance' || newData.child('gameId').val() === 'echo-gestures' || newData.child('gameId').val() === 'memory-spot' || newData.child('gameId').val() === 'red-light' || newData.child('gameId').val() === 'shadow-match' || newData.child('gameId').val() === 'hold-release' || newData.child('gameId').val() === 'crown-control') && newData.child('roundNumber').isNumber() && newData.child('endedAt').isNumber() && newData.child('endedAt').val() >= 0",
+              "gains": {
+                "$uid": {
+                  ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 100"
+                }
+              },
+              "totals": {
+                "$uid": {
+                  ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 800"
+                }
+              }
+            },
+            "2": {
+              ".validate": "newData.hasChildren(['gameId','roundNumber','endedAt','gains','totals']) && (newData.child('gameId').val() === 'bomb-pass' || newData.child('gameId').val() === 'shrink-arena' || newData.child('gameId').val() === 'freeze-dance' || newData.child('gameId').val() === 'echo-gestures' || newData.child('gameId').val() === 'memory-spot' || newData.child('gameId').val() === 'red-light' || newData.child('gameId').val() === 'shadow-match' || newData.child('gameId').val() === 'hold-release' || newData.child('gameId').val() === 'crown-control') && newData.child('roundNumber').isNumber() && newData.child('endedAt').isNumber() && newData.child('endedAt').val() >= 0",
+              "gains": {
+                "$uid": {
+                  ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 100"
+                }
+              },
+              "totals": {
+                "$uid": {
+                  ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 800"
+                }
+              }
+            },
+            "3": {
+              ".validate": "newData.hasChildren(['gameId','roundNumber','endedAt','gains','totals']) && (newData.child('gameId').val() === 'bomb-pass' || newData.child('gameId').val() === 'shrink-arena' || newData.child('gameId').val() === 'freeze-dance' || newData.child('gameId').val() === 'echo-gestures' || newData.child('gameId').val() === 'memory-spot' || newData.child('gameId').val() === 'red-light' || newData.child('gameId').val() === 'shadow-match' || newData.child('gameId').val() === 'hold-release' || newData.child('gameId').val() === 'crown-control') && newData.child('roundNumber').isNumber() && newData.child('endedAt').isNumber() && newData.child('endedAt').val() >= 0",
+              "gains": {
+                "$uid": {
+                  ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 100"
+                }
+              },
+              "totals": {
+                "$uid": {
+                  ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 800"
+                }
+              }
+            },
+            "4": {
+              ".validate": "newData.hasChildren(['gameId','roundNumber','endedAt','gains','totals']) && (newData.child('gameId').val() === 'bomb-pass' || newData.child('gameId').val() === 'shrink-arena' || newData.child('gameId').val() === 'freeze-dance' || newData.child('gameId').val() === 'echo-gestures' || newData.child('gameId').val() === 'memory-spot' || newData.child('gameId').val() === 'red-light' || newData.child('gameId').val() === 'shadow-match' || newData.child('gameId').val() === 'hold-release' || newData.child('gameId').val() === 'crown-control') && newData.child('roundNumber').isNumber() && newData.child('endedAt').isNumber() && newData.child('endedAt').val() >= 0",
+              "gains": {
+                "$uid": {
+                  ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 100"
+                }
+              },
+              "totals": {
+                "$uid": {
+                  ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 800"
+                }
+              }
+            },
+            "5": {
+              ".validate": "newData.hasChildren(['gameId','roundNumber','endedAt','gains','totals']) && (newData.child('gameId').val() === 'bomb-pass' || newData.child('gameId').val() === 'shrink-arena' || newData.child('gameId').val() === 'freeze-dance' || newData.child('gameId').val() === 'echo-gestures' || newData.child('gameId').val() === 'memory-spot' || newData.child('gameId').val() === 'red-light' || newData.child('gameId').val() === 'shadow-match' || newData.child('gameId').val() === 'hold-release' || newData.child('gameId').val() === 'crown-control') && newData.child('roundNumber').isNumber() && newData.child('endedAt').isNumber() && newData.child('endedAt').val() >= 0",
+              "gains": {
+                "$uid": {
+                  ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 100"
+                }
+              },
+              "totals": {
+                "$uid": {
+                  ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 800"
+                }
+              }
+            },
+            "6": {
+              ".validate": "newData.hasChildren(['gameId','roundNumber','endedAt','gains','totals']) && (newData.child('gameId').val() === 'bomb-pass' || newData.child('gameId').val() === 'shrink-arena' || newData.child('gameId').val() === 'freeze-dance' || newData.child('gameId').val() === 'echo-gestures' || newData.child('gameId').val() === 'memory-spot' || newData.child('gameId').val() === 'red-light' || newData.child('gameId').val() === 'shadow-match' || newData.child('gameId').val() === 'hold-release' || newData.child('gameId').val() === 'crown-control') && newData.child('roundNumber').isNumber() && newData.child('endedAt').isNumber() && newData.child('endedAt').val() >= 0",
+              "gains": {
+                "$uid": {
+                  ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 100"
+                }
+              },
+              "totals": {
+                "$uid": {
+                  ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 800"
+                }
+              }
+            },
+            "7": {
+              ".validate": "newData.hasChildren(['gameId','roundNumber','endedAt','gains','totals']) && (newData.child('gameId').val() === 'bomb-pass' || newData.child('gameId').val() === 'shrink-arena' || newData.child('gameId').val() === 'freeze-dance' || newData.child('gameId').val() === 'echo-gestures' || newData.child('gameId').val() === 'memory-spot' || newData.child('gameId').val() === 'red-light' || newData.child('gameId').val() === 'shadow-match' || newData.child('gameId').val() === 'hold-release' || newData.child('gameId').val() === 'crown-control') && newData.child('roundNumber').isNumber() && newData.child('endedAt').isNumber() && newData.child('endedAt').val() >= 0",
+              "gains": {
+                "$uid": {
+                  ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 100"
+                }
+              },
+              "totals": {
+                "$uid": {
+                  ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 800"
+                }
+              }
+            },
+            "$other": {
+              ".validate": false
             }
           }
         }

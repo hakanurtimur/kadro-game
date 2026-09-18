@@ -1,3 +1,4 @@
+import { normalizeMatchState } from "./match-state";
 import { isSkillGameId, normalizeSkillRound } from "./skill-model";
 import { MICROGAME_REGISTRY } from "./registry";
 import type { BombPassRound, MicrogamePlayer, MicrogameRoomState, ShrinkArenaRound } from "./types";
@@ -72,6 +73,7 @@ export function normalizeMicrogameState(raw:any):MicrogameRoomState{
       score:Math.max(0,Number(value?.score)||0),
     } satisfies MicrogamePlayer;
   }
+  if (Object.hasOwn(room, "match")) room.match=normalizeMatchState(room.match);
   room.roundNumber=Math.max(0,Number(room.roundNumber)||0);
   room.activeGameId=room.activeGameId==="bomb-pass"||room.activeGameId==="shrink-arena"||isSkillGameId(room.activeGameId)?room.activeGameId:null;
 

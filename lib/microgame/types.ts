@@ -1,3 +1,4 @@
+import type { MicrogameMatch } from "./match-state";
 import type { SkillGameId, SkillRound } from "./skill-types";
 
 export type MicrogameId = "bomb-pass" | "shrink-arena" | SkillGameId;
@@ -40,6 +41,7 @@ export type ArenaPosition = {
 };
 
 export type MicrogameRoomState = {
+  match?: MicrogameMatch | null;
   schemaVersion: 1;
   code: string;
   hostUid: string;

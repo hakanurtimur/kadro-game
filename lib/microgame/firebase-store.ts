@@ -51,9 +51,9 @@ export class FirebaseMicrogameStore{
     return{room:normalizeMicrogameState(result.snapshot.val()),uid};
   }
   async getRoom(code:string){const{db}=await getFirebaseServices();const snapshot=await get(ref(db,`microgameRooms/${cleanCode(code)}`));return snapshot.exists()?normalizeMicrogameState(snapshot.val()):null;}
-  async subscribeRoom(code:string,listener:Listener){
+  async subscribeRoom(code:string,listener:Listener,onError?: (error: Error) => void){
     const{db}=await getFirebaseServices();void this.syncClock(db);const normalized=cleanCode(code);
-    return onValue(ref(db,`microgameRooms/${normalized}`),(snapshot:any)=>listener(snapshot.exists()?normalizeMicrogameState(snapshot.val()):null));
+    return onValue(ref(db,`microgameRooms/${normalized}`),(snapshot:any)=>listener(snapshot.exists()?normalizeMicrogameState(snapshot.val()):null),onError);
   }
   async mutate(code:string,transition:(room:MicrogameRoomState)=>MicrogameRoomState){
     const{db}=await getFirebaseServices();const roomRef=ref(db,`microgameRooms/${cleanCode(code)}`);

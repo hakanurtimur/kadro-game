@@ -11,7 +11,7 @@ export interface MicrogameStore {
   createRoom(nickname:string):Promise<{room:MicrogameRoomState;uid:string}>;
   joinRoom(code:string,nickname:string):Promise<{room:MicrogameRoomState;uid:string}>;
   getRoom(code:string):Promise<MicrogameRoomState|null>;
-  subscribeRoom(code:string,listener:(room:MicrogameRoomState|null)=>void):Promise<()=>void>;
+  subscribeRoom(code:string,listener:(room:MicrogameRoomState|null)=>void,onError?: (error: Error) => void):Promise<()=>void>;
   mutate(code:string,transition:(room:MicrogameRoomState)=>MicrogameRoomState):Promise<MicrogameRoomState>;
   subscribeArenaPositions(code:string,roundNumber:number,listener:(positions:Record<string,ArenaPosition>)=>void):Promise<()=>void>;
   getArenaPositions(code:string,roundNumber:number):Promise<Record<string,ArenaPosition>>;

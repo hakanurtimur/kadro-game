@@ -6,12 +6,12 @@ const ui=fs.readFileSync("components/microgame/games/ShrinkArenaGame.tsx","utf8"
 const room=fs.readFileSync("components/microgame/MicrogameRoom.tsx","utf8");
 const registry=fs.readFileSync("lib/microgame/registry.ts","utf8");
 
-test("Alan Daralıyor is registered and selectable in Test Mode",()=>{
+test("Alan Daralıyor remains registered in the normal match pool",()=>{
   assert.match(registry,/shrink-arena/);
   assert.match(registry,/Alan Daralıyor/);
   assert.match(room,/ShrinkArenaGame/);
-  assert.match(room,/startShrinkArenaTest/);
-  assert.match(room,/MICROGAMES\.map/);
+  assert.match(room,/startMicrogameMatch/);
+  assert.match(fs.readFileSync("components/microgame/MatchLobby.tsx","utf8"),/MICROGAMES\.map/);
 });
 
 test("arena supports touch/mouse steering, realtime opponents and out reporting",()=>{

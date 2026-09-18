@@ -50,3 +50,32 @@
 .winner-pawn::before,.winner-pawn span{border:2px solid #191919}
 @media(max-width:780px){.ludo-board-wrap{padding:7px;box-shadow:3px 4px 0 #191919}.ludo-board{gap:1px}.ludo-yard-zone{border-width:1.5px;box-shadow:inset 0 0 0 3px #fffbef88}.ludo-yard-zone>span{font-size:6px;left:9%;top:10%;letter-spacing:0}.ludo-pawn .pawn-head::after{box-shadow:2px 0 0 #191919}.ludo-sidebar-right{filter:none}.ludo-die{box-shadow:3px 4px 0 #191919}.ludo-action-toast strong{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.ludo-hero-pawns i{transform:none}}
+
+/* Lobby color selection and deliberate, accessible room departure. */
+.ludo-color-picker{margin:22px 0;padding:16px;border:2px solid var(--ink);border-radius:10px;background:var(--paper-strong);min-width:0}
+.ludo-color-picker legend{font-weight:900;padding:0 6px;color:var(--ink)}
+.ludo-color-picker>p{font-size:12px;margin:0 0 12px;color:var(--muted)}
+.ludo-color-picker>div{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.ludo-color-option{min-width:0;display:flex;flex-direction:column;align-items:center;gap:7px;min-height:90px;padding:12px 5px;border:1.5px solid var(--ink);border-radius:8px;background:var(--paper-strong);color:var(--ink);cursor:pointer}
+.ludo-color-option[aria-pressed="true"]{background:var(--brand-acid);box-shadow:3px 3px 0 var(--ink)}
+.ludo-color-option:disabled:not([aria-pressed="true"]){opacity:.5;cursor:default;background:#eee8dd}
+.ludo-color-option small{font-size:10px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ludo-color-option strong{font-size:12px}.ludo-color-option .turn-color-dot{width:20px;height:20px;border:1.5px solid var(--ink)}
+.ludo-leave-button{color:#842719!important}.ludo-leave-dialog{width:min(440px,calc(100vw - 32px));max-height:calc(100dvh - 40px);overflow:auto;padding:26px;background:var(--paper-strong);color:var(--ink);border:2px solid var(--ink);border-radius:16px;box-shadow:6px 6px 0 var(--ink)}
+.ludo-leave-dialog::backdrop{background:#19191999;backdrop-filter:blur(3px)}
+.ludo-leave-dialog h2{font-size:26px;line-height:1.15;margin:18px 0 12px}.ludo-leave-dialog p{font-size:14px;line-height:1.65;color:var(--muted)}
+.ludo-leave-icon{display:inline-grid;place-items:center;background:var(--brand-peach);border:2px solid var(--ink);border-radius:10px;width:56px;height:56px;transform:rotate(-5deg)}
+.ludo-leave-actions{display:grid;gap:10px;margin-top:22px}.ludo-leave-actions button{min-height:48px;border:2px solid var(--ink);border-radius:8px;background:var(--brand-acid);font:inherit;font-weight:800;cursor:pointer;box-shadow:2px 2px 0 var(--ink)}
+.ludo-leave-actions .ludo-leave-confirm{background:var(--brand-peach);color:#842719}.ludo-leave-actions button:disabled{opacity:.5;cursor:wait}.ludo-leave-error{color:#842719!important}
+.ludo-color-option:focus-visible,.ludo-leave-actions button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+/* Four bays keep every finished pawn separate from the track and other colors. */
+.ludo-finish{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px;padding:3px;position:relative;overflow:visible;border-radius:9px;isolation:isolate}
+.ludo-finish-bay{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;padding:3px;border:1px solid var(--ink);border-radius:4px;min-width:0;min-height:0}
+.ludo-finish-bay.red{background:#f3aaa6;grid-area:1/1}.ludo-finish-bay.green{background:#8fd0a6;grid-area:1/2}.ludo-finish-bay.yellow{background:#efd070;grid-area:2/2}.ludo-finish-bay.blue{background:#98a7e5;grid-area:2/1}
+.ludo-finish .ludo-finish-socket{display:grid;place-items:center;width:100%;height:100%;min-width:0;min-height:0;border:1px dotted #19191970;border-radius:50%;background:#fffdf540;position:relative}
+.ludo-finish-socket .ludo-pawn.finished{position:relative;display:block;width:100%;height:100%;min-width:0;min-height:0;transform:none!important;filter:none;z-index:1;background:transparent;border:0;pointer-events:none}
+.ludo-finish-socket .pawn-head{border-width:1px}.ludo-finish-socket .pawn-body{border-width:1px}.ludo-finish-socket .pawn-head::after{display:none}
+.ludo-finish>img{position:absolute;left:50%;top:50%;width:19%;height:19%;transform:translate(-50%,-50%);z-index:2;background:var(--paper-strong);border:1px solid var(--ink);border-radius:3px;pointer-events:none}
+@media(max-width:500px){.ludo-leave-button span{font-size:10px}.ludo-color-picker{padding:12px 8px}.ludo-color-picker>div{gap:5px}.ludo-finish{gap:1px;padding:2px}.ludo-finish-bay{padding:1px;gap:0}.ludo-leave-dialog{padding:20px}}
+.ludo-finish{place-items:stretch}
+.ludo-finish-socket .pawn-head{height:auto}.ludo-finish-socket .pawn-body{width:auto}

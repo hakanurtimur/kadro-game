@@ -69,7 +69,7 @@ export class FirebaseLudoStore {
     const result = await runTransaction(roomRef, (current) => {
       if (!current) throw new Error("Oda bulunamadı.");
       return transition(normalizeLudoState(current));
-    });
+    }, { applyLocally: false });
     if (!result.committed) throw new Error("Oyun durumu güncellenemedi.");
     return normalizeLudoState(result.snapshot.val());
   }

@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const read=p=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';
+const room=read('components/microgame/MicrogameRoom.tsx'),home=read('components/microgame/MicrogameHome.tsx'),hub=read('app/page.tsx');
+test('public entrypoints no longer expose Test Mode or single-game selection',()=>{for(const source of [room,home,hub])assert.doesNotMatch(source,/TEST MODE|Test Mode|Test Mode’da|FlaskConical|setSelectedGame/);assert.match(room,/startMicrogameMatch/);});
+test('normal match lobby has one start action and a non-interactive nine-game catalog',()=>{const lobby=read('components/microgame/MatchLobby.tsx');assert.match(lobby,/Maçı başlat/);assert.match(lobby,/MICROGAMES\.map/);assert.match(lobby,/MATCH_ROUNDS/);assert.doesNotMatch(lobby,/onClick=.*definition/);});
+test('match advancement is automatic, guarded by round ID and uses a timer deadline',()=>{assert.match(room,/advanceMicrogameMatch/);assert.match(room,/settleMicrogameMatchRound/);assert.match(room,/expectedRound/);assert.match(room,/match\.nextAt/);assert.match(room,/busyRef/);});
+test('game instances have round-specific keys and room subscription cleans up even on delayed resolution',()=>{assert.match(room,/gameKey/);assert.match(room,/key=\{gameKey\}/);assert.match(room,/if \(!live\) stop\(\)/);});
+test('summary has cumulative standing, per-round gains, shared winners and new-match action',()=>{const ui=read('components/microgame/MatchSummary.tsx');assert.match(ui,/microgameStandings/);assert.match(ui,/gains/);assert.match(ui,/rank === 1/);assert.match(ui,/Rövanş/);assert.match(ui,/aria-live/);});
+test('new CSS uses responsive in-flow controls rather than board overlays',()=>{const css=read('components/microgame/match.module.css');assert.match(css,/minmax\(0,\s*1fr\)/);assert.match(css,/prefers-reduced-motion/);assert.doesNotMatch(css,/position:\s*fixed/);});
+test('async Firebase permission errors are surfaced instead of leaving the room loading forever',()=>{const store=read('lib/microgame/firebase-store.ts'),contract=read('lib/microgame/store.ts');assert.match(contract,/onError\?:\s*\(error:\s*Error\)\s*=>\s*void/);assert.match(store,/onError/);assert.match(room,/setLoaded\(true\); setToast\(error\.message\)/);});

@@ -47,7 +47,7 @@ export default function GamesHome() {
           <button className={`${styles.card} ${styles.micro}`} onClick={() => router.push("/microgame")}>
             <div className={styles.cardTop}><Bomb size={38}/><span>04 / TATLI KAOS</span><ArrowUpRight className={styles.cardArrow}/></div>
             <h3>Microgame Royale</h3><p>Dokuz kısa oyun. Refleks, hafıza, biraz panik. Elenmek yok, rövanş var.</p>
-            <div className={styles.cardBottom}><span><Users size={15}/> 2–6 kişi · Test modu</span><b>Kaosa katıl →</b></div>
+            <div className={styles.cardBottom}><span><Users size={15}/> 2–6 kişi · 8 turluk maç</span><b>Kaosa katıl →</b></div>
           </button>
         </div>
       </section>

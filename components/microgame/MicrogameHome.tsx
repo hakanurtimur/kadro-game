@@ -51,7 +51,7 @@ export default function MicrogameHome(){
         <button disabled={loading} onClick={join}>Katıl</button>
       </div>
       {error&&<p className={styles.error}>{error}</p>}
-      <small className={styles.note}><Users size={14}/> Host da oynar. Test Mode’da her oyunu ayrı seçip istediğin kadar tekrar oyna.</small>
+      <small className={styles.note}><Users size={14}/> Oda sahibi de oynar. 8 rastgele tur, ortak puan tablosu; finalde şampiyon belli olur.</small>
     </section>
   </main>;
 }

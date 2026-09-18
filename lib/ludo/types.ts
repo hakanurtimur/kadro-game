@@ -35,7 +35,7 @@ export type LudoChaosState = {
 };
 
 export type LudoLastAction = {
-  type: "roll" | "move" | "capture" | "home" | "chaos";
+  type: "roll" | "move" | "capture" | "home" | "chaos" | "leave";
   message: string;
   pawnId?: string;
   capturedPawnId?: string;
@@ -59,6 +59,7 @@ export type LudoRoomState = {
   dice: number[];
   selectedDie: number | null;
   winnerUid: string | null;
+  finishReason?: "all-home" | "last-player" | "empty";
   chaos: LudoChaosState;
   lastAction: LudoLastAction;
 };

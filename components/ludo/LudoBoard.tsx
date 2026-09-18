@@ -152,7 +152,7 @@ export default function LudoBoard({ room, uid, legalMoves, selectedPawnIndex, pr
   const trackCells = TRACK.map(([row,col], index) => ({row,col,index}));
   const lastPawn = room.lastAction?.pawnId;
   const capturedPawn = room.lastAction?.capturedPawnId;
-  const previewPosition=previewProgress===null?null:progressPosition(room,uid,previewProgress);
+  const previewPosition=previewProgress===null?null:previewProgress===57?([[6,6],[6,8],[8,8],[8,6]] as Array<[number,number]>)[room.players[uid]?.seat??0]:progressPosition(room,uid,previewProgress);
   const previewColor=room.players[uid]?.color??"red";
   const captureFx=captureEffect(room);
   const startDocks=startDockMap(room);
@@ -163,7 +163,20 @@ export default function LudoBoard({ room, uid, legalMoves, selectedPawnIndex, pr
       <div className="ludo-yard-zone green"><span aria-hidden="true">02 / YEŞİL</span></div>
       <div className="ludo-yard-zone yellow"><span aria-hidden="true">03 / SARI</span></div>
       <div className="ludo-yard-zone blue"><span aria-hidden="true">04 / MAVİ</span></div>
-      <div className="ludo-finish"><img src="/brand/mascot.svg" width="64" height="64" alt=""/></div>
+      <div className="ludo-finish" aria-label="Renklerine göre bitiş yuvaları">
+        {COLORS.map(color=>{
+          const player=Object.values(room.players).find(player=>player.color===color);
+          const count=player?.pawns.filter(pawn=>pawn.progress===57).length??0;
+          const label={red:'Kırmızı',green:'Yeşil',yellow:'Sarı',blue:'Mavi'}[color];
+          return <div key={color} className={`ludo-finish-bay ${color}`} role="group" aria-label={`${label} evi · ${count}/4 piyon`}>
+            {Array.from({length:4},(_,index)=>{
+              const pawn=player?.pawns[index];
+              return <span key={index} className="ludo-finish-socket">{pawn?.progress===57&&<span className={`ludo-pawn finished ${color} ${pawn.id===lastPawn?'moved':''}`} role="img" aria-label={`${player?.nickname} taş ${index+1} evde`}><span className="pawn-head"/><span className="pawn-body"/></span>}</span>;
+            })}
+          </div>;
+        })}
+        <img src="/brand/mascot.svg" width="24" height="24" alt=""/>
+      </div>
 
       {YARDS.map((yard,seat)=>yard.map(([row,col],index)=><div
         key={`yard-socket-${seat}-${index}`}
@@ -188,6 +201,7 @@ export default function LudoBoard({ room, uid, legalMoves, selectedPawnIndex, pr
       </div>}
 
       {Object.values(room.players).flatMap((player) => player.pawns.map((pawn,pawnIndex) => {
+        if(pawn.progress===57)return null;
         let row:number, col:number;
         if (pawn.progress < 0) [row,col]=YARDS[player.seat][pawnIndex];
         else if (pawn.progress < 52) {

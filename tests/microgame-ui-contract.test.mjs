@@ -11,8 +11,8 @@ test('microgame routes and reusable room UI exist',()=>{
   assert.match(home,/2–6/);
   assert.match(home,/createRoom/);
   assert.match(home,/joinRoom/);
-  assert.match(room,/TEST MODE/);
-  assert.match(room,/startBombPassTest/);
+  assert.doesNotMatch(room,/TEST MODE/);
+  assert.match(room,/startMicrogameMatch/);
   assert.match(room,/GameSocial/);
 });
 

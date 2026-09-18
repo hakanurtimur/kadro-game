@@ -2,15 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Copy, Crown, Dices, RotateCcw, Shield, Sparkles, Users, Volume2, VolumeX, Zap } from "lucide-react";
+import { ArrowLeft, LogOut, Copy, Crown, Dices, RotateCcw, Shield, Sparkles, Users, Volume2, VolumeX, Zap } from "lucide-react";
 import LudoBoard from "./LudoBoard";
 import LudoGuide from "./LudoGuide";
+import LeaveLudoDialog from "./LeaveLudoDialog";
 import LudoDie from "./LudoDie";
 import GameSocial from "@/components/social/GameSocial";
-import { chooseLudoDie, finishNoMove, legalPawnMoves, moveLudoPawn, previewLudoPawnMove, rollLudoDice, setLudoMode, startLudoGame } from "@/lib/ludo/engine";
+import { chooseLudoDie, setLudoColor, leaveLudoPlayer, finishNoMove, legalPawnMoves, moveLudoPawn, previewLudoPawnMove, rollLudoDice, setLudoMode, startLudoGame } from "@/lib/ludo/engine";
 import { getLudoStore } from "@/lib/ludo/store";
 import { getLudoSoundEnabled, playLudoSfx, setLudoSoundEnabled, unlockLudoAudio } from "@/lib/ludo/sound";
-import type { LudoMode, LudoRoomState } from "@/lib/ludo/types";
+import type { LudoColor, LudoMode, LudoRoomState } from "@/lib/ludo/types";
 
 
 export default function LudoClient({ code }: { code:string }) {
@@ -19,6 +20,8 @@ export default function LudoClient({ code }: { code:string }) {
   const [uid,setUid]=useState<string|null>(null);
   const [room,setRoom]=useState<LudoRoomState|null>(null);
   const [toast,setToast]=useState("");
+  const [leaveOpen,setLeaveOpen]=useState(false);
+  const [leaveError,setLeaveError]=useState("");
   const [rolling,setRolling]=useState(false);
   const [actionBusy,setActionBusy]=useState(false);
   const [selectedPawn,setSelectedPawn]=useState<number|null>(null);
@@ -108,6 +111,14 @@ export default function LudoClient({ code }: { code:string }) {
     else if(next.lastAction?.type==='home') playLudoSfx("home",{delay});
     if(next.lastAction?.type==='chaos') playLudoSfx("chaos",{delay:delay+0.08});
   }
+  async function changeColor(color:LudoColor){
+    await runAction(async()=>{try{await mutate(state=>setLudoColor(state,actorUid,color));setToast("");}catch{}});
+  }
+  async function leave(){
+    setLeaveError("");
+    await runAction(async()=>{try{await mutate(state=>leaveLudoPlayer(state,actorUid));router.replace('/ludo');}catch(error){setLeaveError(error instanceof Error?error.message:"Ayrılma işlemi tamamlanamadı. Tekrar dene.");}});
+  }
+  function askLeave(){setLeaveError("");setLeaveOpen(true);}
   async function changeMode(mode:LudoMode){playLudoSfx("select");await runAction(async()=>{try{await mutate((state)=>setLudoMode(state,actorUid,mode));}catch{}});}
   async function start(){playLudoSfx("confirm");await runAction(async()=>{try{await mutate((state)=>startLudoGame(state,actorUid));}catch{}});}
   async function roll(){
@@ -144,7 +155,7 @@ export default function LudoClient({ code }: { code:string }) {
   return <main className={`ludo-room-shell ludo-theme-${room.mode}`} aria-busy={actionBusy||rolling}>
     <div className="soft-grid"/>
     <header className="ludo-topbar">
-      <button className="ludo-back" onClick={()=>router.push('/ludo')}><ArrowLeft size={16}/> Kızma Birader</button>
+      <button className="ludo-back ludo-leave-button" disabled={actionBusy||rolling} onClick={askLeave} aria-label="Oyundan ayrıl"><LogOut size={16}/><span>Oyundan ayrıl</span></button>
       <button className="room-code" onClick={()=>navigator.clipboard.writeText(code)}>{code}<Copy size={14}/></button>
       <div className="ludo-topbar-actions">
         <button className="ludo-sound-toggle" type="button" aria-pressed={soundEnabled} aria-label={soundEnabled?'Oyun seslerini kapat':'Oyun seslerini aç'} title={soundEnabled?'Sesleri kapat':'Sesleri aç'} onClick={toggleSound}>{soundEnabled?<Volume2 size={17}/>:<VolumeX size={17}/>}<span>{soundEnabled?'Ses açık':'Sessiz'}</span></button>
@@ -161,6 +172,14 @@ export default function LudoClient({ code }: { code:string }) {
           {players.map((player)=><article key={player.uid} className={`ludo-player-card ${player.color}`}><span className="ludo-mini-pawn"/><div><strong>{player.nickname}</strong><small>{player.uid===room.hostUid?'host · oyuncu':`${player.seat+1}. koltuk`}</small></div>{player.uid===room.hostUid&&<Crown size={17}/>}</article>)}
           {Array.from({length:4-players.length}).map((_,i)=><div className="ludo-empty-seat" key={i}>+</div>)}
         </div>
+        <fieldset className="ludo-color-picker" disabled={actionBusy}>
+          <legend>Rengini seç</legend>
+          <p>Seçtiğin renk, tahtadaki başlangıç köşen.</p>
+          <div>{([['red','Kırmızı'],['green','Yeşil'],['yellow','Sarı'],['blue','Mavi']] as const).map(([color,label])=>{
+            const owner=players.find(player=>player.color===color);
+            return <button type="button" key={color} className={`ludo-color-option ${color}`} aria-pressed={me.color===color} disabled={actionBusy||!!owner&&owner.uid!==uid} onClick={()=>changeColor(color)}><span className={`turn-color-dot ${color}`}/><strong>{label}</strong><small>{owner ? owner.uid===uid?'Senin rengin':owner.nickname:'Boş'}</small></button>;
+          })}</div>
+        </fieldset>
         <div className="ludo-mode-picker">
           <button disabled={!isHost||actionBusy} className={room.mode==='classic'?'active':''} onClick={()=>changeMode('classic')}><Dices size={17}/> Klasik</button>
           <button disabled={!isHost||actionBusy} className={room.mode==='chaos'?'active':''} onClick={()=>changeMode('chaos')}><Zap size={17}/> Kaos</button>
@@ -214,8 +233,9 @@ export default function LudoClient({ code }: { code:string }) {
       </aside>
     </section>}
 
-    {room.status==='finished'&&winner&&<div className="ludo-winner-overlay"><div className={`winner-pawn ${winner.color}`}><span/></div><Sparkles size={28}/><small>KAZANAN</small><h2>{winner.nickname}</h2><p>Dört taş da eve geldi. Masa dağıldı, gurur kaldı.</p><button className="primary-button" onClick={()=>router.push('/ludo')}>Yeni oyun</button></div>}
+    {room.status==='finished'&&winner&&<div className="ludo-winner-overlay"><div className={`winner-pawn ${winner.color}`}><span/></div><Sparkles size={28}/><small>KAZANAN</small><h2>{winner.nickname}</h2><p>{room.finishReason==='last-player'?'Masada kalan son oyuncu kazandı. Rövanşta görüşürüz!':'Dört taş da eve geldi. Masa dağıldı, gurur kaldı.'}</p><button className="primary-button" disabled={actionBusy} onClick={askLeave}>Masadan ayrıl</button></div>}
     <GameSocial game="ludo" code={code} participant={{uid:actorUid,nickname:me.nickname,role:"player"}} mobileDockId="ludo-social-dock"/>
+    {leaveOpen&&<LeaveLudoDialog playing={room.status==='playing'} busy={actionBusy} error={leaveError} onCancel={()=>setLeaveOpen(false)} onConfirm={()=>void leave()}/>}
     {toast&&<div className="toast">{toast}</div>}
   </main>;
 }

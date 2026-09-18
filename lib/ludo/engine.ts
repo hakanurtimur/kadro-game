@@ -156,9 +156,47 @@ export function joinLudoPlayer(room: LudoRoomState, input: { uid: string; nickna
   const name = nickname(input.nickname);
   if (!name) throw new LudoRuleError("Bir nickname yazmalısın.");
   if (order.some((player) => player.nickname.toLocaleLowerCase("tr-TR") === name.toLocaleLowerCase("tr-TR"))) throw new LudoRuleError("Bu nickname odada kullanılıyor.");
-  const seat = order.length;
+  const seat = COLORS.findIndex((_, index) => !order.some(player => player.seat === index));
   next.players[input.uid] = { uid: input.uid, nickname: name, seat, color: COLORS[seat], pawns: makePawns(input.uid) };
   next.updatedAt = input.now ?? Date.now();
+  return next;
+}
+
+export function setLudoColor(room: LudoRoomState, uid: string, color: LudoColor, now = Date.now()): LudoRoomState {
+  const next = normalizeLudoState(room);
+  const player = assertPlayer(next, uid);
+  if (next.status !== "lobby") throw new LudoRuleError("Renk yalnız lobide değişir.");
+  const seat = COLORS.indexOf(color);
+  if (seat < 0) throw new LudoRuleError("Renk geçersiz.");
+  if (Object.values(next.players).some(other => other.uid !== uid && other.seat === seat)) throw new LudoRuleError("Bu renk başka bir oyuncu tarafından kullanılıyor.");
+  player.color = color;
+  player.seat = seat;
+  next.updatedAt = now;
+  return next;
+}
+
+export function leaveLudoPlayer(room: LudoRoomState, uid: string, now = Date.now()): LudoRoomState {
+  const next = normalizeLudoState(room);
+  const leaving = assertPlayer(next, uid);
+  const remaining = playerOrder(next).filter(player => player.uid !== uid);
+  // Advance while the departing seat is still present so gaps retain turn order.
+  if (next.status === "playing" && next.turnUid === uid && remaining.length > 1) advanceTurn(next, now);
+  delete next.players[uid];
+  if (next.hostUid === uid && remaining.length) next.hostUid = remaining[0].uid;
+  if (!remaining.length || (next.status === "playing" && remaining.length === 1)) {
+    next.status = "finished";
+    next.winnerUid = remaining[0]?.uid ?? null;
+    next.finishReason = remaining.length ? "last-player" : "empty";
+    next.turnUid = null;
+    next.phase = "awaiting-roll";
+    next.dice = [];
+    next.selectedDie = null;
+    next.chaos.current = null;
+  } else if (next.winnerUid === uid) {
+    next.winnerUid = null;
+  }
+  next.lastAction = { type: "leave", message: `${leaving.nickname} masadan ayrıldı.${next.finishReason === "last-player" ? ` ${remaining[0].nickname} masada kalan son oyuncu!` : ""}`, at: now };
+  next.updatedAt = now;
   return next;
 }
 
@@ -184,6 +222,7 @@ export function startLudoGame(room: LudoRoomState, uid: string, now = Date.now()
   next.dice = [];
   next.selectedDie = null;
   next.winnerUid = null;
+  delete next.finishReason;
   next.chaos = { current: null, history: [], peaceUntilTurn: -1 };
   next.lastAction = { type: "move", message: `${order[0].nickname} başlıyor!`, at: now };
   next.updatedAt = now;
@@ -353,6 +392,7 @@ export function recomputeLudoWinner(room: LudoRoomState, now = Date.now()): Ludo
   const winner = Object.values(next.players).find((player) => player.pawns.every((pawn) => pawn.progress === FINISH_PROGRESS));
   if (winner) {
     next.winnerUid = winner.uid;
+    next.finishReason = "all-home";
     next.status = "finished";
     next.turnUid = null;
     next.dice = [];
