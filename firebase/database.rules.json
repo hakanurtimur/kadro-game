@@ -98,6 +98,63 @@
             }
           }
         }
+      },
+      "microgame": {
+        "$code": {
+          ".read": "auth != null && root.child('microgameRooms').child($code).child('players').child(auth.uid).exists()",
+          "messages": {
+            ".indexOn": "createdAt",
+            "$messageId": {
+              ".write": "auth != null && !data.exists() && newData.exists() && newData.child('uid').val() === auth.uid && root.child('microgameRooms').child($code).child('players').child(auth.uid).exists()",
+              ".validate": "newData.hasChildren(['id','uid','nickname','role','text','createdAt']) && newData.child('id').val() === $messageId && newData.child('uid').val() === auth.uid && newData.child('nickname').isString() && newData.child('nickname').val().length > 0 && newData.child('nickname').val().length <= 20 && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 160 && newData.child('createdAt').isNumber() && newData.child('role').val() === 'player' && newData.child('nickname').val() === root.child('microgameRooms').child($code).child('players').child(auth.uid).child('nickname').val()"
+            }
+          },
+          "reactions": {
+            "$uid": {
+              ".write": "auth != null && $uid === auth.uid && newData.exists() && root.child('microgameRooms').child($code).child('players').child(auth.uid).exists()",
+              ".validate": "newData.hasChildren(['id','uid','nickname','role','reaction','createdAt']) && newData.child('id').isString() && newData.child('uid').val() === $uid && $uid === auth.uid && newData.child('nickname').isString() && newData.child('nickname').val().length > 0 && newData.child('nickname').val().length <= 20 && newData.child('reaction').isString() && newData.child('reaction').val().length > 0 && newData.child('reaction').val().length <= 40 && newData.child('createdAt').isNumber() && newData.child('role').val() === 'player' && newData.child('nickname').val() === root.child('microgameRooms').child($code).child('players').child(auth.uid).child('nickname').val()"
+            }
+          }
+        }
+      }
+    },
+    "microgameRooms": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && newData.exists() && ((!data.exists() && newData.child('hostUid').val() === auth.uid && newData.child('players').child(auth.uid).child('uid').val() === auth.uid) || (data.exists() && data.child('players').child(auth.uid).exists()) || (data.exists() && data.child('status').val() === 'lobby' && !data.child('players').child(auth.uid).exists() && newData.child('players').child(auth.uid).child('uid').val() === auth.uid))",
+        ".validate": "newData.hasChildren(['schemaVersion','code','hostUid','status','createdAt','updatedAt','players','roundNumber']) && newData.child('schemaVersion').val() === 1 && newData.child('code').val() === $code && newData.child('hostUid').isString() && (newData.child('status').val() === 'lobby' || newData.child('status').val() === 'playing' || newData.child('status').val() === 'results') && newData.child('createdAt').isNumber() && newData.child('updatedAt').isNumber() && newData.child('roundNumber').isNumber() && newData.child('roundNumber').val() >= 0 && (!data.exists() || (newData.child('hostUid').val() === data.child('hostUid').val() && newData.child('code').val() === data.child('code').val() && newData.child('createdAt').val() === data.child('createdAt').val()))",
+        "players": {
+          "$uid": {
+            ".validate": "newData.hasChildren(['uid','nickname','seat','score']) && newData.child('uid').val() === $uid && newData.child('nickname').isString() && newData.child('nickname').val().length > 0 && newData.child('nickname').val().length <= 20 && newData.child('seat').isNumber() && newData.child('seat').val() >= 0 && newData.child('seat').val() < 6 && newData.child('score').isNumber() && newData.child('score').val() >= 0"
+          }
+        },
+        "activeGameId": {
+          ".validate": "newData.val() === 'bomb-pass' || newData.val() === 'shrink-arena' || newData.val() === 'freeze-dance' || newData.val() === 'echo-gestures' || newData.val() === 'memory-spot' || newData.val() === 'red-light' || newData.val() === 'shadow-match' || newData.val() === 'hold-release' || newData.val() === 'crown-control'"
+        },
+        "round": {
+          ".validate": "newData.hasChildren(['gameId','instructionsUntil','startsAt','endsAt']) && newData.child('instructionsUntil').isNumber() && newData.child('startsAt').isNumber() && newData.child('endsAt').isNumber() && newData.child('instructionsUntil').val() < newData.child('startsAt').val() && newData.child('startsAt').val() < newData.child('endsAt').val() && ((newData.child('gameId').val() === 'bomb-pass' && newData.hasChildren(['holderUid','passes','lastPassAt']) && newData.child('holderUid').isString() && newData.parent().child('players').child(newData.child('holderUid').val()).exists() && newData.child('passes').isNumber() && newData.child('passes').val() >= 0 && newData.child('lastPassAt').isNumber()) || newData.child('gameId').val() === 'shrink-arena' || (newData.hasChildren(['seed']) && newData.child('seed').isNumber() && newData.child('seed').val() >= 0 && newData.child('seed').val() <= 4294967295 && (newData.child('gameId').val() === 'freeze-dance' || newData.child('gameId').val() === 'echo-gestures' || newData.child('gameId').val() === 'memory-spot' || newData.child('gameId').val() === 'red-light' || newData.child('gameId').val() === 'shadow-match' || newData.child('gameId').val() === 'hold-release' || newData.child('gameId').val() === 'crown-control'))) && newData.child('gameId').val() === newData.parent().child('activeGameId').val()",
+          "out": {
+            "$uid": {
+              ".validate": "newData.isNumber() && newData.val() >= newData.parent().parent().child('startsAt').val() && newData.val() <= newData.parent().parent().child('endsAt').val() && root.child('microgameRooms').child($code).child('players').child($uid).exists()"
+            }
+          },
+          "submissions": {
+            "$uid": {
+              ".validate": "newData.hasChildren(['score','note','submittedAt']) && root.child('microgameRooms').child($code).child('players').child($uid).exists() && newData.child('score').isNumber() && newData.child('score').val() >= 0 && newData.child('score').val() <= 100 && newData.child('score').val() % 1 === 0 && newData.child('note').isString() && newData.child('note').val().length <= 120 && newData.child('submittedAt').isNumber()"
+            }
+          }
+        }
+      }
+    },
+    "microgameLive": {
+      "$code": {
+        ".read": "auth != null && root.child('microgameRooms').child($code).child('players').child(auth.uid).exists()",
+        "positions": {
+          "$uid": {
+            ".write": "auth != null && $uid === auth.uid && newData.exists() && root.child('microgameRooms').child($code).child('players').child(auth.uid).exists()",
+            ".validate": "newData.hasChildren(['uid','roundNumber','x','y','updatedAt']) && newData.child('uid').val() === $uid && newData.child('roundNumber').isNumber() && newData.child('roundNumber').val() >= 0 && newData.child('x').isNumber() && newData.child('x').val() >= 0 && newData.child('x').val() <= 100 && newData.child('y').isNumber() && newData.child('y').val() >= 0 && newData.child('y').val() <= 100 && newData.child('updatedAt').isNumber()"
+          }
+        }
       }
     }
   }

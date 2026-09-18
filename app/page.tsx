@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ArrowRight, Bot, Dices, Sparkles, Users } from "lucide-react";
+import { ArrowRight, Bomb, Bot, Dices, Sparkles, Users } from "lucide-react";
 
 export default function GamesHome() {
   const router = useRouter();
@@ -11,9 +11,9 @@ export default function GamesHome() {
       <div className="hub-orb hub-orb-a" />
       <div className="hub-orb hub-orb-b" />
       <section className="games-hub-hero">
-        <span className="brand-chip"><Sparkles size={16}/> aynı masa, üç oyun</span>
+        <span className="brand-chip"><Sparkles size={16}/> aynı masa, dört oyun</span>
         <h1>Bu gece ne oynuyoruz?</h1>
-        <p>Oda kodunu paylaş, tarayıcıdan direkt gir. AI destekli KADRO, klasik Kızma Birader veya iki kişilik kaydırma oyunu TAŞIR.</p>
+        <p>Oda kodunu paylaş, tarayıcıdan direkt gir. AI destekli KADRO, Kızma Birader, TAŞIR veya 10 saniyelik kaoslardan oluşan Microgame Royale.</p>
       </section>
 
       <section className="game-choice-grid">
@@ -46,6 +46,17 @@ export default function GamesHome() {
             <h2>TAŞIR Oyna</h2>
             <p>4×5 kapalı taşları aç. Çıkan sembol hangi hatta aitse o hat kayar; beş hattı da 4/4 tamamla.</p>
             <div className="choice-pills"><span><Users size={14}/> tam 2 kişi</span><span>★ Joker + TKM</span></div>
+          </div>
+          <span className="choice-go">Gir <ArrowRight size={18}/></span>
+        </button>
+
+        <button className="game-choice-card" onClick={() => router.push("/microgame")}>
+          <div className="game-choice-art" style={{background:"linear-gradient(145deg,#ffe7d6,#ece8ff)",color:"#6b5e76"}}><Bomb size={50}/></div>
+          <div className="game-choice-copy">
+            <small>HIZLI PARTY GAME</small>
+            <h2>Microgame Royale</h2>
+            <p>Dokuz kısa oyun, ortak skor, sıfır elenme. Hafıza, refleks ve aynı arenada kapışma.</p>
+            <div className="choice-pills"><span><Users size={14}/> 2–6 kişi</span><span>💣 Test Mode</span></div>
           </div>
           <span className="choice-go">Gir <ArrowRight size={18}/></span>
         </button>

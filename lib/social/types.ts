@@ -1,4 +1,4 @@
-export type SocialGame = "kadro" | "ludo" | "tasir";
+export type SocialGame = "kadro" | "ludo" | "tasir" | "microgame";
 export type SocialRole = "player" | "moderator";
 
 export type SocialParticipant = {
