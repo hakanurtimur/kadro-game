@@ -116,3 +116,28 @@
 @media(max-width:760px){.home{padding-top:88px}.hero h1{font-size:52px}.bombStage,.arenaStage{box-shadow:2px 3px 0 var(--ink)}}
 .hero h1 em{color:var(--ink);text-decoration:underline;text-decoration-color:var(--brand-acid);text-decoration-thickness:7px;text-underline-offset:2px}
 .heroBomb{background:var(--brand-peach);border:var(--brand-outline);border-radius:14px;box-shadow:4px 4px 0 var(--ink);color:var(--ink)}
+
+/* Bomb Pass and Shrink Arena pieces. */
+.countdown,.instructionBomb,.arenaGuideIcon,.arenaResultIcon{background:var(--brand-peach);color:var(--ink);border:2px solid var(--ink);border-radius:18px;box-shadow:4px 4px 0 var(--ink)}
+.instructionBomb>span{background:var(--brand-acid);color:var(--ink);border:1.5px solid var(--ink);box-shadow:2px 2px 0 var(--ink)}
+.bombOrb{background:#282825;color:var(--brand-acid);border:3px solid var(--ink);box-shadow:5px 6px 0 var(--ink)}
+.bombOrb:before{border-top-color:var(--ink);border-right-color:var(--ink)}
+.fuse,.sparkOne,.sparkTwo{background:var(--brand-acid);border:1px solid var(--ink);border-radius:2px;box-shadow:none}
+.bombOrb.danger{background:#803529;color:#fff4d8}
+.bombOrb.urgent{background:#a63324;outline:3px dashed #a63324;outline-offset:7px;box-shadow:5px 6px 0 var(--ink)}
+.bombOrb.exploded{background:var(--brand-peach);color:var(--ink);outline:none}
+.fuseStatus,.waitingHolder{background:var(--paper-strong);border:1.5px solid var(--ink);border-radius:7px}
+.fuseStatus b,.waitingHolder b{color:var(--ink)}.fuseStatus small,.waitingHolder small{color:var(--muted)}
+.fuseUrgent{background:#ffc9bf;border-color:#842719}
+.waitingHolder>span{background:var(--brand-lilac);border:1px solid var(--ink);border-radius:8px;color:var(--ink)}
+.bombUrgentStage{background:#fff1e9}
+.safeZone{background:var(--brand-mint);border:3px dashed #215b37;box-shadow:none}
+.safeZone:after{border-color:#215b3770}
+.arenaPlayer{color:var(--ink);border:2px solid var(--ink);box-shadow:2px 3px 0 var(--ink);border-radius:12px}
+.arenaPlayer>small{background:var(--paper-strong);color:var(--ink);border:1px solid var(--ink);border-radius:4px;box-shadow:none}
+.arenaPlayerOut{opacity:.4;filter:grayscale(1);border-style:dashed}
+.outBanner{background:var(--ink);color:var(--paper-strong);border:1px solid var(--ink);border-radius:5px;box-shadow:2px 2px 0 var(--brand-peach)}
+.arenaResults>div{border-color:var(--ink);background:var(--paper-strong)}
+.arenaResults>div:first-child{background:var(--brand-acid)}
+.arenaResults b,.arenaResults>div>span{color:var(--ink)}.arenaResults small{color:var(--muted)}
+.arenaMe{outline:3px solid var(--brand-acid);outline-offset:2px}

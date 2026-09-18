@@ -1,0 +1,49 @@
+/* KADRO's character cards, auction and jury share the DÜMBÜK tabletop. */
+.room-shell .auction-stage{background:var(--paper-strong)}
+.room-shell .auction-stage::before{display:none}
+.poly-body{filter:none;animation:none}
+.poly-face{clip-path:none;border:3px solid var(--ink);border-radius:35% 42% 44% 38%;background:var(--brand-peach);transform:rotate(-3deg)}
+.poly-face::before,.poly-hair::after,.poly-shirt::before,.poly-shirt::after{display:none}
+.poly-hair{background:var(--ink)}
+.poly-eye{background:var(--ink)}
+.poly-mouth{border-color:var(--ink);transform:rotate(-9deg)}
+.poly-neck{background:var(--brand-peach);border:2px solid var(--ink);clip-path:none}
+.poly-shirt{clip-path:none;border:3px solid var(--ink);border-radius:30% 30% 8% 8%;box-shadow:3px 3px 0 var(--ink);transform:rotate(2deg)}
+.poly-shirt span{color:var(--ink)}
+.poly-orbit{border:2px dashed var(--ink);opacity:.2}
+.poly-source-tag{background:var(--brand-acid);color:var(--ink);border:1.5px solid var(--ink);border-radius:4px;transform:rotate(-2deg)}
+.poly-character.small .poly-face,.poly-character.small .poly-shirt{border-width:1.5px}
+.poly-character.small .poly-shirt{box-shadow:1px 1px 0 var(--ink)}
+.auction-topline,.auction-title p,.price-stack small,.price-stack span{color:var(--muted)}
+.timer-pill{background:var(--brand-mint);color:var(--ink);border:1.5px solid var(--ink);border-radius:7px}
+.timer-pill.danger{background:#ffc9bf;color:#842719;border-color:#842719}
+.auction-progress{height:8px;border:1px solid var(--ink);background:var(--brand-lilac);border-radius:3px}
+.auction-progress span{background:var(--brand-acid);border-right:2px solid var(--ink)}
+.price-stack{padding:14px 24px;background:var(--brand-acid);border:2px solid var(--ink);border-radius:8px;box-shadow:3px 3px 0 var(--ink)}
+.price-stack strong{color:var(--ink)}
+.profile-expanded,.profile-card,.character-details,.moderator-auction-note{background:var(--paper-strong);border:1.5px solid var(--ink);border-radius:9px}
+.profile-expanded{padding:14px}
+.profile-role,.profile-note,.profile-source{color:var(--muted)}
+.profile-strengths span{border:1px solid var(--ink);background:var(--brand-mint);color:var(--ink);border-radius:4px}
+.profile-weakness{background:var(--brand-peach);color:var(--ink);border-left:3px solid var(--ink);padding:8px}
+.character-details summary{color:var(--ink);padding:10px}
+.character-details summary span{color:var(--muted)}
+.character-details[open] summary{border-bottom:1px dashed var(--ink);background:var(--brand-lilac)}
+.moderator-auction-note{background:var(--brand-lilac)}
+.table-seat{background:var(--paper-strong);border:1.5px solid var(--ink);border-bottom:3px solid var(--ink);border-radius:10px}
+.table-seat.leading{background:var(--brand-acid);border-color:var(--ink)}
+.table-vacancy{background:var(--cream);border:1.5px dashed #19191980;border-radius:8px;color:var(--muted)}
+.withdrawn-pill{background:var(--brand-peach);color:var(--ink);border:1px solid var(--ink);border-radius:4px}
+.scenario-ribbon{background:var(--brand-lilac);border:1px solid var(--ink);color:var(--ink);border-radius:6px}
+.show-steps li{background:var(--paper-strong);border:1px dashed var(--ink);border-radius:5px;color:var(--muted)}
+.show-steps li.revealed{background:var(--brand-mint);color:var(--ink);border-style:solid}
+.show-steps li[aria-current="step"]{background:var(--brand-acid);box-shadow:2px 2px 0 var(--ink);color:var(--ink)}
+.result-card.winner{background:var(--brand-acid);border:2px solid var(--ink)}
+.winner-crown,.jury-star{color:var(--ink);filter:none}
+.score-bubble{background:var(--paper-strong);color:var(--ink);border:2px solid var(--ink);border-radius:8px;box-shadow:2px 2px 0 var(--ink)}
+.criterion{border-bottom:1px dashed #19191950}
+.criterion-track{background:var(--brand-lilac);border:1px solid var(--ink);border-radius:3px}
+.criterion-track span{background:var(--brand-mint);border-right:2px solid var(--ink)}
+.award-grid>article,.judge-detail{background:var(--paper-strong);border:1px solid var(--ink);border-radius:8px}
+@media(max-width:430px){.price-stack{padding:12px 20px}.table-seat{box-shadow:none}}
+.poly-source-tag{z-index:7;bottom:-8px}

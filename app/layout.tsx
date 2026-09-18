@@ -3,6 +3,7 @@ import "./globals.css";
 import "./party-upgrade.css";
 import "./dumbuk-games.css";
 import "./dumbuk-ludo.css";
+import "./dumbuk-kadro.css";
 
 
 export const viewport: Viewport = {

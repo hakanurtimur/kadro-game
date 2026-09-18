@@ -861,3 +861,48 @@
 .results>div{border-color:#19191970;border-radius:8px}
 .resultTitle{color:var(--ink)}
 @media(max-width:430px){.stage{box-shadow:2px 3px 0 var(--ink)}}
+
+/* Individual game pieces: keep timing, positions and touch surfaces intact. */
+.signal{border:2px solid var(--ink);border-radius:7px;box-shadow:2px 2px 0 var(--ink)}
+.go{background:#d9eee1;color:#215b37}.stop{background:#ffc9bf;color:#842719}.holdSignal{background:var(--brand-lilac);color:var(--ink)}
+.danceFloor,.memoryBoard,.crownArena{border:2px solid var(--ink);border-radius:12px;background-image:radial-gradient(#19191928 1px,transparent 1px);background-size:22px 22px}
+.danceFloor{background-color:var(--brand-mint)}
+.danceFloor.frozen{background-color:#ffc9bf;border-color:var(--ink)}
+.danceToken{background:var(--brand-lilac);color:var(--ink);border:2px solid var(--ink);border-radius:19px 23px 16px 20px;box-shadow:3px 3px 0 var(--ink)}
+.frozen .danceToken{background:var(--paper-strong)}
+.meter{height:10px;background:var(--paper-strong);border:1px solid var(--ink);border-radius:3px}
+.meter span{background:var(--brand-acid);border-right:2px solid var(--ink);border-radius:0}
+.sequence span{background:var(--paper-strong);color:var(--muted);border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink)}
+.sequence .lit{background:var(--brand-acid);color:var(--ink);border-color:var(--ink);box-shadow:3px 3px 0 var(--ink)}
+.sequence .correct{background:var(--brand-mint);color:#215b37;border-color:var(--ink);box-shadow:none}
+.gesturePad,.holdPad,.runPad{background:var(--brand-lilac);color:var(--ink)}
+.gesturePad>strong,.holdPad>span{color:var(--ink)}
+.gesturePad>small,.holdPad>small,.runPad>small,.preparation>small,.feedback,.shapeGrid small{color:var(--muted)}
+.gesturePad.pressed,.holdPad.pressed,.runPad.pressed{background:var(--brand-acid);box-shadow:1px 1px 0 var(--ink)}
+.holdPad.releaseCue{background:var(--brand-mint);border:3px dashed #215b37}
+.memoryBoard{background-color:var(--paper-strong)}
+.memoryItem{filter:none}
+.questionShape{color:var(--brand-peach)}
+.chosen{background:var(--brand-acid);color:var(--ink);border:2px dashed var(--ink);box-shadow:2px 2px 0 var(--ink)}
+.shadowPreview{background:var(--brand-lilac);border:2px dashed var(--ink);border-radius:12px;color:var(--ink)}
+.shapeGrid button{background:var(--paper-strong)}
+.shapeGrid .picked{background:var(--brand-acid);border-color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)}
+.raceTrack{border:2px solid var(--ink);border-radius:10px;background:var(--cream)}
+.raceLane{background:var(--brand-peach);border-right:2px dashed #19191970}
+.raceLane:nth-child(2n){background:var(--brand-lilac)}
+.raceLane>b{color:var(--ink)}
+.finishLine{color:var(--ink);border-bottom:3px dashed var(--ink);padding-bottom:4px}
+.raceRunner{border:2px solid var(--ink);border-radius:9px;box-shadow:2px 2px 0 var(--ink);color:var(--ink)}
+.throneState{background:var(--brand-acid);color:var(--ink);border:1.5px solid var(--ink);border-radius:7px}
+.crownArena{background-color:var(--brand-lilac)}
+.throne{background:var(--brand-acid);border:3px dashed var(--ink);color:var(--ink);box-shadow:none}
+.crownPlayer{border:2px solid var(--ink);color:var(--ink);box-shadow:2px 2px 0 var(--ink)}
+.crownPlayer.mine{border:3px solid var(--ink);outline:3px solid var(--brand-acid);outline-offset:2px}
+.crownPlayer.knocked{filter:grayscale(1);outline:3px dashed #842719}
+.crownPlayer>small{background:var(--paper-strong);color:var(--ink);border:1px solid var(--ink);border-radius:3px}
+.resultCrown{color:var(--brand-acid);transform:rotate(-7deg)}
+.results article{background:var(--paper-strong);border:1.5px solid var(--ink);border-radius:9px;box-shadow:2px 2px 0 var(--ink)}
+.results .myResult{background:var(--brand-acid);border-color:var(--ink)}
+.results article>span{border:1.5px solid var(--ink);border-radius:8px;color:var(--ink)}
+.results small{color:var(--muted)}.results strong{color:var(--ink)}
+.stage button:focus-visible,.holdPad:focus-visible,.runPad:focus-visible{outline:3px solid var(--ink);outline-offset:4px}

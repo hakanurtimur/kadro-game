@@ -70,3 +70,35 @@
 .winOverlay button{background:var(--brand-acid);color:var(--ink);border:var(--brand-outline);border-radius:8px}
 .home button,.room button{cursor:pointer}.home button:disabled,.room button:disabled{cursor:default}
 @media(max-width:760px){.home{padding-top:88px}.hero h1{font-size:64px}.boardCard{box-shadow:2px 3px 0 var(--ink)}}
+
+/* Tile faces, routed lanes, carry trail and round finish. */
+.tileBack{background:var(--brand-lilac)}
+.tileBack span{font-weight:950;opacity:1;transform:rotate(-8deg)}
+.tileFront.correctTile{background:var(--brand-mint);color:#215b37;box-shadow:0 3px 0 var(--ink);border:2px solid #215b37}
+.tileFront.wrongTile{background:var(--brand-peach);color:var(--ink);box-shadow:0 3px 0 var(--ink)}
+.tileMark{font-variant-numeric:tabular-nums}
+.tileMark>small{opacity:1;color:inherit}
+.columnButtons .completeColumn{background:var(--brand-mint);color:#215b37;box-shadow:0 3px 0 var(--ink)}
+.columnButtons .completeColumn.legalColumn{background:var(--brand-acid);color:var(--ink);box-shadow:0 3px 0 var(--ink)}
+.boardCard:not(.activeBoard) .columnButtons button:not(.completeColumn){background:var(--paper-strong);color:var(--muted)}
+.joker{background:var(--brand-acid)!important;color:var(--ink)!important;border-style:dashed}
+.rangeHint{color:var(--muted)!important}
+.flowTrail>span,.flowTrail>strong,.overflow{background:var(--paper-strong);color:var(--ink);border:2px solid var(--ink);border-radius:8px;box-shadow:2px 3px 0 var(--ink)}
+.flowTrail>span{background:var(--brand-acid)}
+/* Nested symbol spans are not additional cards. */
+.flowTrail .tileMark{width:auto;height:auto;border:0;box-shadow:none;background:none;border-radius:0;color:inherit;display:inline-flex}
+.flowTrail i{background:var(--brand-lilac);color:var(--ink);border:1px solid var(--ink);border-radius:4px}
+.rpsChoices button:nth-child(2){background:var(--brand-peach)}
+.rpsChoices button:nth-child(3){background:var(--brand-mint)}
+.rpsChoices button:disabled{opacity:.5}
+.rpsChoices button:not(:disabled):active{transform:translateY(2px);box-shadow:none}
+.winOverlay{background:#19191999;backdrop-filter:blur(4px)}
+.winOverlay>div>span{display:inline-grid;place-items:center;width:76px;height:76px;background:var(--brand-acid);border:2px solid var(--ink);border-radius:14px;box-shadow:3px 3px 0 var(--ink);transform:rotate(-7deg);color:var(--ink)}
+.soundToggle[aria-pressed="true"]{color:var(--ink)!important;background:var(--brand-acid)!important;border-color:var(--ink)!important}
+.home button:focus-visible,.room button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+@media(max-width:760px){
+ .columnButtons .legalColumn,.columnButtons .completeColumn.legalColumn{background:var(--brand-acid)!important;color:var(--ink)!important;box-shadow:inset 0 0 0 2px var(--ink),0 2px 0 var(--ink)!important;animation:none!important}
+ .columnButtons .legalColumn:active,.columnButtons .completeColumn.legalColumn:active{box-shadow:inset 0 0 0 3px var(--ink)!important}
+}
+.boardGrid,.columnButtons{grid-template-columns:repeat(5,minmax(0,1fr))}
+.tileSlot{min-width:0}

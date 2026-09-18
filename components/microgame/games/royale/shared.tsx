@@ -30,7 +30,7 @@ export function Shape({ name, silhouette = false }: {
         bird: <><path d="M15 60Q7 45 14 25L38 43Q42 16 65 21Q78 24 80 38L95 45 79 51Q80 80 44 80L21 91 28 73Z"/>{!silhouette && <circle cx="67" cy="35" r="4" fill="#fff7e9"/>}</>,
         mushroom: <><path d="M36 55H64L70 89Q50 98 30 89ZM10 55Q12 8 50 8Q88 8 90 55Q50 71 10 55Z"/>{!silhouette && <><circle cx="32" cy="40" r="7" fill="#fff7e9"/><circle cx="63" cy="31" r="8" fill="#fff7e9"/></>}</>,
     };
-    return <svg viewBox="0 0 100 100" aria-hidden="true" className={css.shape} fill="currentColor">{paths[name]}</svg>;
+    return <svg viewBox="0 0 100 100" aria-hidden="true" className={css.shape} fill="currentColor" stroke={silhouette ? "currentColor" : "#191919"} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round">{paths[name]}</svg>;
 }
 export function point(e: ReactPointerEvent<HTMLElement>) { const r = e.currentTarget.getBoundingClientRect(); return { x: Math.max(0, Math.min(100, (e.clientX - r.left) / Math.max(1, r.width) * 100)), y: Math.max(0, Math.min(100, (e.clientY - r.top) / Math.max(1, r.height) * 100)) }; }
 export function capture(e: ReactPointerEvent<HTMLElement>) { if (!e.isPrimary || e.button !== 0)
